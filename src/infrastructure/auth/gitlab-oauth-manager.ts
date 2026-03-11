@@ -97,6 +97,13 @@ export class GitLabOAuthManager implements TokenProvider {
 
     const redirect = new URL(this.options.redirectUri as string);
     const state = randomBytes(16).toString('hex');
+    const authorizeUrl = new URL(`${this.oauthBaseUrl}/oauth/authorize`);
+    authorizeUrl.searchParams.set('client_id', this.options.clientId as string);
+    authorizeUrl.searchParams.set('redirect_uri', this.options.redirectUri as string);
+    authorizeUrl.searchParams.set('response_type', 'code');
+    authorizeUrl.searchParams.set('scope', this.options.scopes.join(' '));
+    authorizeUrl.searchParams.set('state', state);
+    const localEntryUrl = `${redirect.protocol}//${redirect.host}/`;
 
     const code = await new Promise<string>((resolve, reject) => {
       const server = createServer((req, res) => {
@@ -105,9 +112,17 @@ export class GitLabOAuthManager implements TokenProvider {
         }
 
         const url = new URL(req.url, `${redirect.protocol}//${redirect.host}`);
+
+        if (url.pathname === '/') {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(renderOAuthEntryPage(authorizeUrl.toString()));
+          return;
+        }
+
         if (url.pathname !== redirect.pathname) {
           res.statusCode = 404;
-          res.end('Not found');
+          res.end('Not found. Open "/" to start OAuth authorization.');
           return;
         }
 
@@ -139,18 +154,12 @@ export class GitLabOAuthManager implements TokenProvider {
       });
 
       server.listen(resolvePort(redirect), redirect.hostname, () => {
-        const authorizeUrl = new URL(`${this.oauthBaseUrl}/oauth/authorize`);
-        authorizeUrl.searchParams.set('client_id', this.options.clientId as string);
-        authorizeUrl.searchParams.set('redirect_uri', this.options.redirectUri as string);
-        authorizeUrl.searchParams.set('response_type', 'code');
-        authorizeUrl.searchParams.set('scope', this.options.scopes.join(' '));
-        authorizeUrl.searchParams.set('state', state);
-
-        const authorizeUrlText = authorizeUrl.toString();
-        const opened = this.options.openBrowser && openInBrowser(authorizeUrlText);
+        const opened = this.options.openBrowser && openInBrowser(localEntryUrl);
         if (!opened) {
-          console.error('Open this URL to authorize GitLab access:');
-          console.error(authorizeUrlText);
+          console.error('Open this local URL to start OAuth authorization:');
+          console.error(localEntryUrl);
+          console.error('If local redirect does not work, use direct GitLab OAuth URL:');
+          console.error(authorizeUrl.toString());
         }
       });
     });
@@ -267,4 +276,38 @@ function hasOpenCommand(platform: NodeJS.Platform): boolean {
   } catch {
     return false;
   }
+}
+
+function renderOAuthEntryPage(authorizeUrl: string): string {
+  const escapedUrl = authorizeUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GitLab OAuth</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; background: #0b1220; color: #e5e7eb; }
+      .card { max-width: 640px; margin: 48px auto; background: #121a2b; border: 1px solid #1f2a44; border-radius: 12px; padding: 24px; }
+      h1 { margin: 0 0 12px; font-size: 20px; }
+      p { margin: 0 0 14px; color: #cbd5e1; line-height: 1.5; }
+      a.btn { display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 10px 14px; border-radius: 8px; font-weight: 600; }
+      .hint { margin-top: 12px; font-size: 13px; color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Authorize GitLab Access</h1>
+      <p>Click the button below to continue OAuth authorization.</p>
+      <a class="btn" href="${escapedUrl}">Authorize with GitLab</a>
+      <p class="hint">You will be redirected automatically in 3 seconds if no action is taken.</p>
+    </div>
+    <script>
+      setTimeout(function () {
+        window.location.href = ${JSON.stringify(authorizeUrl)};
+      }, 3000);
+    </script>
+  </body>
+</html>`;
 }

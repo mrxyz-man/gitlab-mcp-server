@@ -1,4 +1,5 @@
-import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 export type StoredOAuthToken = {
   accessToken: string;
@@ -27,6 +28,7 @@ export class OAuthTokenStore {
   }
 
   write(token: StoredOAuthToken): void {
+    mkdirSync(dirname(this.filePath), { recursive: true });
     writeFileSync(this.filePath, JSON.stringify(token, null, 2), 'utf8');
     chmodSync(this.filePath, 0o600);
   }

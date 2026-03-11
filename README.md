@@ -5,11 +5,7 @@ MCP server for GitLab integration (TypeScript + Node.js).
 Полный пользовательский сценарий подключения к ИИ-агенту:
 - `docs/USER_GUIDE.md`
 
-## Run with npx
-
-```bash
-npx -y gitlab-mcp-agent-server
-```
+Основной сценарий: добавить сервер в `~/.codex/config.toml` (готовый блок есть в `docs/USER_GUIDE.md`).
 
 Для конечного пользователя обычно достаточно:
 1. Зарегистрировать GitLab OAuth application.
