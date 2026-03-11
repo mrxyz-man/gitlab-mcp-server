@@ -1,0 +1,46 @@
+# Задачи: настройка ИИ-агента
+
+Статусы:
+- `[ ]` не начато
+- `[~]` в работе
+- `[x]` завершено
+
+## Этап 1. База (текущий)
+
+- [x] Создать структуру `docs/` для правил и задач.
+- [x] Описать роли: Developer, Tester, Architect.
+- [x] Определить общие правила разработки (best practices + Clean Code).
+- [x] Определить правила архитектора по Clean Architecture.
+- [x] Создать черный список анти-паттернов.
+- [x] Ввести единое commit-правило.
+- [x] Создать `AGENTS.md` как точку входа для Codex-агента.
+
+## Этап 2. Подготовка к реализации MCP GitLab
+
+- [x] Зафиксировать стек проекта (язык, runtime, тестовый фреймворк, линтер).
+- [x] Спроектировать модульную структуру сервера (domain/application/infrastructure/interface).
+- [x] Описать минимальный набор MCP tools для v0:
+  - [x] `gitlab_create_issue`
+  - [x] `gitlab_get_issue`
+  - [x] `gitlab_close_issue`
+  - [x] `gitlab_update_issue_labels`
+  - [x] `gitlab_list_labels`
+  - [x] `gitlab_ensure_labels`
+- [x] Определить стратегию аутентификации к GitLab (PAT/OAuth/CI token).
+- [x] Реализовать OAuth auto-login + refresh token flow с token store.
+- [x] Подготовить npm/npx запуск для конечного пользователя.
+- [x] Подготовить `.env.example` без секретов.
+- [ ] Определить базовую стратегию логирования и обработки ошибок.
+- [x] Ввести конфиг-политику для управления issue workflow (`enabled`, `allow_*`, `allowed_labels`).
+
+Принятое решение по стеку: `docs/agent/stack-decision.md`.
+Принятая модульная структура: `docs/architecture/module-structure.md`.
+Контракт issue tools v0: `docs/architecture/issue-tools-v0.md`.
+Стратегия аутентификации: `docs/architecture/auth-strategy.md`.
+
+## Этап 3. Качество и CI
+
+- [ ] Добавить тестовую матрицу (unit + integration).
+- [ ] Добавить проверку `lint + test + typecheck` в CI.
+- [ ] Добавить шаблон PR с чеклистом правил агента.
+- [ ] Ввести обязательную ссылку на Context7-документацию для нетривиальных решений.

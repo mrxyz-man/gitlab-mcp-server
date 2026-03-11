@@ -1,0 +1,12 @@
+node_modules/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+.env.local
+gitlab-mcp-token.json
+*.log
+*.tgz
+.npmrc
+.DS_Store
