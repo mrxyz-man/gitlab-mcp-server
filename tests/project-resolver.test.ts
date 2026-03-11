@@ -45,4 +45,17 @@ describe('ProjectResolver', () => {
     const resolver = new ProjectResolver(makeConfig({ gitlab: { defaultProject: 'group/default' } }));
     expect(resolver.resolveProject()).toBe('group/default');
   });
+
+  test('prefers auto-detected project over default project', () => {
+    const resolver = new ProjectResolver(
+      makeConfig({
+        gitlab: {
+          defaultProject: 'group/default',
+          autoResolveProjectFromGit: true,
+          autoDetectedProject: 'group/from-remote'
+        }
+      })
+    );
+    expect(resolver.resolveProject()).toBe('group/from-remote');
+  });
 });
