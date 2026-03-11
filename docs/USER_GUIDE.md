@@ -60,7 +60,7 @@ export GITLAB_OAUTH_TOKEN_STORE_PATH="$HOME/.config/gitlab-mcp/token.json";
 export GITLAB_OAUTH_AUTO_LOGIN="true";
 export GITLAB_OAUTH_OPEN_BROWSER="false";
 
-# optional
+# optional fallback if auto-detect from git remote is unavailable
 export GITLAB_DEFAULT_PROJECT="group/repo";
 export GITLAB_AUTO_RESOLVE_PROJECT_FROM_GIT="true";
 
@@ -97,7 +97,7 @@ npx -y gitlab-mcp-agent-server
 2. Ограничь права файла:
    - `chmod 600 /home/<user>/.config/gitlab-mcp/token.json`
 3. Оставь `GITLAB_OAUTH_OPEN_BROWSER=false` для headless окружений.
-4. Обязательно заполни `GITLAB_DEFAULT_PROJECT`, если агент должен работать в одном проекте.
+4. Для multi-repo режима лучше не задавать `GITLAB_DEFAULT_PROJECT`, чтобы проект брался из `git remote` текущего `cwd`.
 
 ## 7. Быстрая проверка работоспособности
 

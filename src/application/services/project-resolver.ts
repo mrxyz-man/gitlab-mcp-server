@@ -9,12 +9,12 @@ export class ProjectResolver {
       return project;
     }
 
-    if (this.config.gitlab.defaultProject) {
-      return this.config.gitlab.defaultProject;
-    }
-
     if (this.config.gitlab.autoResolveProjectFromGit && this.config.gitlab.autoDetectedProject) {
       return this.config.gitlab.autoDetectedProject;
+    }
+
+    if (this.config.gitlab.defaultProject) {
+      return this.config.gitlab.defaultProject;
     }
 
     throw new ConfigurationError(

@@ -152,6 +152,13 @@ export class GitLabOAuthManager implements TokenProvider {
         server.close();
         resolve(authCode);
       });
+      server.on('error', (error) => {
+        reject(
+          new Error(
+            `OAuth callback server failed on ${redirect.hostname}:${resolvePort(redirect)}: ${error.message}`
+          )
+        );
+      });
 
       server.listen(resolvePort(redirect), redirect.hostname, () => {
         const opened = this.options.openBrowser && openInBrowser(localEntryUrl);
