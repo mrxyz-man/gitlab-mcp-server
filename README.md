@@ -1,4 +1,4 @@
-# @mrxyz/gitlab-mcp-server
+# gitlab-mcp-agent-server
 
 MCP server for GitLab integration (TypeScript + Node.js).
 
@@ -8,7 +8,7 @@ MCP server for GitLab integration (TypeScript + Node.js).
 ## Run with npx
 
 ```bash
-npx -y @mrxyz/gitlab-mcp-server
+npx -y gitlab-mcp-agent-server
 ```
 
 Для конечного пользователя обычно достаточно:

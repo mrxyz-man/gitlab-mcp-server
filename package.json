@@ -1,10 +1,10 @@
 {
-  "name": "@mrxyz/gitlab-mcp-server",
+  "name": "gitlab-mcp-agent-server",
   "version": "0.1.0",
   "description": "MCP server for GitLab integration via OAuth",
   "main": "build/src/index.js",
   "bin": {
-    "gitlab-mcp-server": "bin/gitlab-mcp-server.js"
+    "gitlab-mcp-agent-server": "bin/gitlab-mcp-server.js"
   },
   "files": [
     "bin",

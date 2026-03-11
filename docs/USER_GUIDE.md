@@ -1,6 +1,6 @@
 # User Guide
 
-Этот гайд для конечного пользователя: как подключить `@mrxyz/gitlab-mcp-server` в конфиг ИИ-агента через `npx` и работать через OAuth с авто-рефрешем токена.
+Этот гайд для конечного пользователя: как подключить `gitlab-mcp-agent-server` в конфиг ИИ-агента через `npx` и работать через OAuth с авто-рефрешем токена.
 
 ## 1. Подготовка GitLab OAuth Application
 
@@ -32,7 +32,7 @@
   "mcpServers": {
     "gitlab": {
       "command": "npx",
-      "args": ["-y", "@mrxyz/gitlab-mcp-server"],
+      "args": ["-y", "gitlab-mcp-agent-server"],
       "cwd": "/path/to/your/git/repo",
       "env": {
         "GITLAB_OAUTH_CLIENT_ID": "<APPLICATION_ID>",
@@ -50,7 +50,7 @@
   "mcpServers": {
     "gitlab": {
       "command": "npx",
-      "args": ["-y", "@mrxyz/gitlab-mcp-server"],
+      "args": ["-y", "gitlab-mcp-agent-server"],
       "cwd": "/path/to/your/git/repo",
       "env": {
         "GITLAB_API_URL": "https://gitlab.com/api/v4",

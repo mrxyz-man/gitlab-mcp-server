@@ -21,12 +21,12 @@ npm run build
 npm pack --dry-run
 ```
 
-## 3) npm publish (@mrxyz/gitlab-mcp-server)
+## 3) npm publish (gitlab-mcp-agent-server)
 
 Требования:
 1. Пользователь `npm` должен иметь доступ к scope `@mrxyz`.
 2. `package.json`:
-   - `"name": "@mrxyz/gitlab-mcp-server"`
+   - `"name": "gitlab-mcp-agent-server"`
    - `"publishConfig": { "access": "public" }`
 
 Команды:
@@ -39,7 +39,7 @@ npm publish
 ## 4) Post-publish smoke test
 
 ```bash
-npx -y @mrxyz/gitlab-mcp-server
+npx -y gitlab-mcp-agent-server
 ```
 
 Проверить в MCP-клиенте:
