@@ -38,7 +38,7 @@ export class GitLabApiClient implements GitLabApiPort {
     const data = await this.request<GitLabIssueApi>(`/projects/${projectPath}/issues`, {
       method: 'POST',
       body: JSON.stringify(body)
-    });
+    }, input.project);
 
     return mapIssue(data);
   }
@@ -46,7 +46,9 @@ export class GitLabApiClient implements GitLabApiPort {
   async getIssue(input: GetIssueInput): Promise<GitLabIssue> {
     const projectPath = encodeProjectRef(input.project);
     const data = await this.request<GitLabIssueApi>(
-      `/projects/${projectPath}/issues/${input.issueIid}`
+      `/projects/${projectPath}/issues/${input.issueIid}`,
+      undefined,
+      input.project
     );
 
     return mapIssue(data);
@@ -59,7 +61,8 @@ export class GitLabApiClient implements GitLabApiPort {
       {
         method: 'PUT',
         body: JSON.stringify({ state_event: 'close' })
-      }
+      },
+      input.project
     );
 
     return mapIssue(data);
@@ -72,7 +75,8 @@ export class GitLabApiClient implements GitLabApiPort {
       {
         method: 'PUT',
         body: JSON.stringify({ labels: input.labels.join(',') })
-      }
+      },
+      input.project
     );
 
     return mapIssue(data);
@@ -83,7 +87,7 @@ export class GitLabApiClient implements GitLabApiPort {
     const query = input.search
       ? `/projects/${projectPath}/labels?search=${encodeURIComponent(input.search)}`
       : `/projects/${projectPath}/labels`;
-    const data = await this.request<GitLabLabelApi[]>(query);
+    const data = await this.request<GitLabLabelApi[]>(query, undefined, input.project);
 
     return data.map(mapLabel);
   }
@@ -109,7 +113,9 @@ export class GitLabApiClient implements GitLabApiPort {
 
     const querySuffix = query.size > 0 ? `?${query.toString()}` : '';
     const data = await this.request<GitLabIssueApi[]>(
-      `/projects/${projectPath}/issues${querySuffix}`
+      `/projects/${projectPath}/issues${querySuffix}`,
+      undefined,
+      input.project
     );
 
     return data.map(mapIssue);
@@ -124,13 +130,17 @@ export class GitLabApiClient implements GitLabApiPort {
         color: input.color ?? '#1f75cb',
         description: input.description
       })
-    });
+    }, input.project);
 
     return mapLabel(data);
   }
 
-  private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const token = await this.options.tokenProvider.getAccessToken();
+  private async request<T>(
+    path: string,
+    init?: RequestInit,
+    projectRef?: string | number
+  ): Promise<T> {
+    const token = await this.options.tokenProvider.getAccessToken(projectRef);
     if (!token) {
       throw new ConfigurationError(
         'GitLab access token is not configured. Set GITLAB_OAUTH_ACCESS_TOKEN (oauth) or GITLAB_PAT (pat).'

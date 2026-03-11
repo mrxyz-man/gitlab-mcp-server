@@ -23,6 +23,7 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value !== 'false'),
+  GITLAB_GROUP_OAUTH_CONFIG_JSON: z.string().optional(),
   GITLAB_PAT: z.string().optional(),
   GITLAB_DEFAULT_PROJECT: z.string().optional(),
   GITLAB_AUTO_RESOLVE_PROJECT_FROM_GIT: z
@@ -66,6 +67,7 @@ export type AppConfig = {
       autoLogin: boolean;
       openBrowser: boolean;
     };
+    groupOAuthConfigs: Record<string, GitLabGroupOAuthConfig>;
     defaultProject?: string;
     autoResolveProjectFromGit: boolean;
     autoDetectedProject?: string;
@@ -78,6 +80,17 @@ export type AppConfig = {
     allowedLabels: string[];
     autoRemovePreviousStateLabels: boolean;
   };
+};
+
+export type GitLabGroupOAuthConfig = {
+  clientId?: string;
+  clientSecret?: string;
+  redirectUri?: string;
+  scopes: string[];
+  tokenStorePath: string;
+  autoLogin: boolean;
+  openBrowser: boolean;
+  bootstrapAccessToken?: string;
 };
 
 export function loadConfig(): AppConfig {
@@ -100,6 +113,12 @@ export function loadConfig(): AppConfig {
         autoLogin: env.GITLAB_OAUTH_AUTO_LOGIN,
         openBrowser: env.GITLAB_OAUTH_OPEN_BROWSER
       },
+      groupOAuthConfigs: parseGroupOAuthConfigJson(env.GITLAB_GROUP_OAUTH_CONFIG_JSON, {
+        redirectUri: env.GITLAB_OAUTH_REDIRECT_URI,
+        scopes: splitCsv(env.GITLAB_OAUTH_SCOPES),
+        autoLogin: env.GITLAB_OAUTH_AUTO_LOGIN,
+        openBrowser: env.GITLAB_OAUTH_OPEN_BROWSER
+      }),
       defaultProject: env.GITLAB_DEFAULT_PROJECT,
       autoResolveProjectFromGit: env.GITLAB_AUTO_RESOLVE_PROJECT_FROM_GIT,
       autoDetectedProject
@@ -113,6 +132,88 @@ export function loadConfig(): AppConfig {
       autoRemovePreviousStateLabels: env.ISSUE_WORKFLOW_AUTO_REMOVE_PREVIOUS_STATE_LABELS
     }
   };
+}
+
+function parseGroupOAuthConfigJson(
+  raw: string | undefined,
+  defaults: {
+    redirectUri?: string;
+    scopes: string[];
+    autoLogin: boolean;
+    openBrowser: boolean;
+  }
+): Record<string, GitLabGroupOAuthConfig> {
+  if (!raw) {
+    return {};
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('GITLAB_GROUP_OAUTH_CONFIG_JSON must be valid JSON.');
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('GITLAB_GROUP_OAUTH_CONFIG_JSON must be an object map.');
+  }
+
+  const result: Record<string, GitLabGroupOAuthConfig> = {};
+  for (const [groupKey, value] of Object.entries(parsed)) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      continue;
+    }
+
+    const rec = value as Record<string, unknown>;
+    result[groupKey] = {
+      clientId: toStringOrUndefined(rec.clientId ?? rec.client_id),
+      clientSecret: toStringOrUndefined(rec.clientSecret ?? rec.client_secret),
+      redirectUri: toStringOrUndefined(rec.redirectUri ?? rec.redirect_uri ?? defaults.redirectUri),
+      scopes: parseScopes(rec.scopes, defaults.scopes),
+      tokenStorePath:
+        toStringOrUndefined(rec.tokenStorePath ?? rec.token_store_path) ??
+        join(homedir(), '.config', 'gitlab-mcp', `${sanitizeForFilename(groupKey)}-token.json`),
+      autoLogin: toBooleanOrDefault(rec.autoLogin ?? rec.auto_login, defaults.autoLogin),
+      openBrowser: toBooleanOrDefault(rec.openBrowser ?? rec.open_browser, defaults.openBrowser),
+      bootstrapAccessToken: toStringOrUndefined(
+        rec.bootstrapAccessToken ?? rec.bootstrap_access_token
+      )
+    };
+  }
+
+  return result;
+}
+
+function parseScopes(value: unknown, fallback: string[]): string[] {
+  if (typeof value === 'string') {
+    return splitCsv(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item) => item.length > 0);
+  }
+
+  return fallback;
+}
+
+function toStringOrUndefined(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+function toBooleanOrDefault(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value !== 'false';
+  }
+  return fallback;
+}
+
+function sanitizeForFilename(value: string): string {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, '_');
 }
 
 function resolveAccessToken(env: z.infer<typeof EnvSchema>): string | undefined {

@@ -59,6 +59,7 @@ export GITLAB_OAUTH_SCOPES="api";
 export GITLAB_OAUTH_TOKEN_STORE_PATH="$HOME/.config/gitlab-mcp/token.json";
 export GITLAB_OAUTH_AUTO_LOGIN="true";
 export GITLAB_OAUTH_OPEN_BROWSER="false";
+export GITLAB_GROUP_OAUTH_CONFIG_JSON='{"konoha7":{"clientId":"<ID_1>","clientSecret":"<SECRET_1>","redirectUri":"http://127.0.0.1:8787/oauth/callback"},"othergroup":{"clientId":"<ID_2>","clientSecret":"<SECRET_2>","redirectUri":"http://127.0.0.1:8788/oauth/callback"}}';
 
 # optional fallback if auto-detect from git remote is unavailable
 export GITLAB_DEFAULT_PROJECT="group/repo";
@@ -69,6 +70,11 @@ npx -y gitlab-mcp-agent-server
 ```
 
 После изменения `config.toml` перезапусти Codex.
+
+Как выбирается OAuth-конфиг при `GITLAB_GROUP_OAUTH_CONFIG_JSON`:
+1. Сервер берёт `resolved_project` (например `konoha7/subgroup/repo`).
+2. Находит самый длинный совпадающий group key.
+3. Использует соответствующие `clientId/clientSecret/redirectUri/tokenStorePath`.
 
 ## 4. Что происходит при первом запуске
 

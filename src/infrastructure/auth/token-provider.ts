@@ -1,5 +1,5 @@
 export interface TokenProvider {
-  getAccessToken(): Promise<string>;
+  getAccessToken(projectRef?: string | number): Promise<string>;
 }
 
 export class StaticTokenProvider implements TokenProvider {
