@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 export type StoredOAuthToken = {
@@ -17,10 +17,17 @@ export class OAuthTokenStore {
       return undefined;
     }
 
-    const raw = readFileSync(this.filePath, 'utf8');
-    const parsed = JSON.parse(raw) as StoredOAuthToken;
+    let parsed: StoredOAuthToken;
+    try {
+      const raw = readFileSync(this.filePath, 'utf8');
+      parsed = JSON.parse(raw) as StoredOAuthToken;
+    } catch {
+      this.delete();
+      return undefined;
+    }
 
     if (!parsed.accessToken || !parsed.expiresAt) {
+      this.delete();
       return undefined;
     }
 
@@ -31,5 +38,17 @@ export class OAuthTokenStore {
     mkdirSync(dirname(this.filePath), { recursive: true });
     writeFileSync(this.filePath, JSON.stringify(token, null, 2), 'utf8');
     chmodSync(this.filePath, 0o600);
+  }
+
+  delete(): void {
+    if (!existsSync(this.filePath)) {
+      return;
+    }
+
+    try {
+      unlinkSync(this.filePath);
+    } catch {
+      // ignore
+    }
   }
 }

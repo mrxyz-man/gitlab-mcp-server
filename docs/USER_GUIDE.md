@@ -90,6 +90,10 @@ npx -y gitlab-mcp-agent-server
 - `~/.config/gitlab-mcp/gitlab.com/token.json`
 - `~/.config/gitlab-mcp/gitlab.work.local/token.json`
 
+Для OAuth используется lock-файл на instance:
+- `<tokenStorePath>.oauth.lock`
+- если OAuth уже идёт в другом процессе, текущий процесс ждёт появления токена.
+
 ## 4. Что происходит при первом запуске
 
 1. Агент вызывает любой GitLab tool (например `gitlab_list_labels`).
@@ -98,6 +102,9 @@ npx -y gitlab-mcp-agent-server
 4. Локальный URL `http://127.0.0.1:8787/` автоматически редиректит на GitLab OAuth.
 5. Если браузер не может быть открыт, сервер печатает URL авторизации в лог.
 6. После подтверждения в GitLab и callback на `http://127.0.0.1:8787/oauth/callback` токены сохраняются в token store для конкретного instance.
+7. В браузере показывается feedback-страница:
+   - `Success`: токен сохранен, можно вернуться в ИИ-агент;
+   - `Error`: показана причина и кнопка повторного запуска OAuth.
 
 ## 5. Автообновление токена
 
@@ -105,6 +112,7 @@ npx -y gitlab-mcp-agent-server
 1. Проверяет срок действия `access_token` перед API-вызовами.
 2. Выполняет refresh по `refresh_token`, если токен истекает.
 3. Перезаписывает token store файл новым токеном.
+4. Если refresh token отозван/протух, очищает token store и запускает OAuth заново (при `GITLAB_OAUTH_AUTO_LOGIN=true`).
 
 ## 6. Рекомендованные настройки для production
 
@@ -149,6 +157,16 @@ npx -y gitlab-mcp-agent-server
 1. Проверь scope `api`.
 2. Убедись, что `client_id`/`client_secret` от того же приложения.
 3. Удали token store файл и пройди OAuth заново.
+
+`Stored OAuth refresh token is invalid or expired`:
+1. Включи `GITLAB_OAUTH_AUTO_LOGIN=true`.
+2. Повтори запрос: сервер автоматически запустит OAuth и сохранит новый token.
+
+`OAuth flow is already running in another process for this instance`:
+1. Заверши OAuth в первом окне.
+2. Второе окно подождет и продолжит после появления токена.
+3. Если lock застрял после краша, удали stale lock:
+   - `<tokenStorePath>.oauth.lock`
 
 ## 10. Advanced (необязательно)
 

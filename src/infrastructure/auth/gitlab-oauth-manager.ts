@@ -1,7 +1,7 @@
-import { createServer } from 'node:http';
+import { exec, execSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { exec } from 'node:child_process';
-import { execSync } from 'node:child_process';
+import { closeSync, existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 
 import { ConfigurationError } from '../../shared/errors';
 import { OAuthTokenStore, type StoredOAuthToken } from './oauth-token-store';
@@ -44,9 +44,22 @@ export class GitLabOAuthManager implements TokenProvider {
     }
 
     if (stored?.refreshToken) {
-      const refreshed = await this.refreshToken(stored.refreshToken);
-      this.tokenStore.write(refreshed);
-      return refreshed.accessToken;
+      try {
+        const refreshed = await this.refreshToken(stored.refreshToken);
+        this.tokenStore.write(refreshed);
+        return refreshed.accessToken;
+      } catch (error) {
+        if (!shouldReloginOnRefreshFailure(error)) {
+          throw error;
+        }
+
+        this.tokenStore.delete();
+        if (!this.options.autoLogin) {
+          throw new ConfigurationError(
+            'Stored OAuth refresh token is invalid or expired. Enable GITLAB_OAUTH_AUTO_LOGIN or re-authorize manually.'
+          );
+        }
+      }
     }
 
     if (this.options.bootstrapAccessToken) {
@@ -59,9 +72,61 @@ export class GitLabOAuthManager implements TokenProvider {
       );
     }
 
-    const interactiveToken = await this.loginInteractively();
+    const interactiveToken = await this.loginInteractivelyWithLock();
     this.tokenStore.write(interactiveToken);
     return interactiveToken.accessToken;
+  }
+
+  private async loginInteractivelyWithLock(): Promise<StoredOAuthToken> {
+    const lockFilePath = `${this.options.tokenStorePath}.oauth.lock`;
+    const lock = acquireOauthLock(lockFilePath);
+
+    if (lock.acquired) {
+      try {
+        return await this.loginInteractively();
+      } finally {
+        lock.release();
+      }
+    }
+
+    return this.waitForTokenFromOtherProcess(lockFilePath);
+  }
+
+  private async waitForTokenFromOtherProcess(lockFilePath: string): Promise<StoredOAuthToken> {
+    const maxWaitMs = 2 * 60 * 1000;
+    const pollMs = 1000;
+    let elapsed = 0;
+
+    console.error(
+      'OAuth flow is already running in another process for this instance. Waiting for token...'
+    );
+
+    while (elapsed < maxWaitMs) {
+      const stored = this.tokenStore.read();
+      if (stored && !isExpiringSoon(stored.expiresAt)) {
+        return stored;
+      }
+
+    if (!existsSync(lockFilePath) && stored?.refreshToken) {
+        try {
+          const refreshed = await this.refreshToken(stored.refreshToken);
+          this.tokenStore.write(refreshed);
+          return refreshed;
+        } catch (error) {
+          if (shouldReloginOnRefreshFailure(error) && this.options.autoLogin) {
+            return this.loginInteractivelyWithLock();
+          }
+          throw error;
+        }
+      }
+
+      await sleep(pollMs);
+      elapsed += pollMs;
+    }
+
+    throw new Error(
+      'Timed out waiting for OAuth token from another process. Retry request or complete authorization in the first window.'
+    );
   }
 
   private async refreshToken(refreshToken: string): Promise<StoredOAuthToken> {
@@ -84,7 +149,7 @@ export class GitLabOAuthManager implements TokenProvider {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`Failed to refresh OAuth token: ${response.status} ${body}`);
+      throw new OAuthRefreshError(response.status, body);
     }
 
     const payload = (await response.json()) as OAuthTokenResponse;
@@ -132,7 +197,17 @@ export class GitLabOAuthManager implements TokenProvider {
 
         if (error) {
           res.statusCode = 400;
-          res.end('Authorization failed. You can close this tab.');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(
+            renderOAuthResultPage({
+              status: 'error',
+              title: 'Authorization Failed',
+              message: `GitLab returned error: ${escapeHtml(error)}.`,
+              hint: 'Return to your AI agent and retry the request.',
+              actionHref: localEntryUrl,
+              actionLabel: 'Start OAuth Again'
+            })
+          );
           server.close();
           reject(new Error(`OAuth authorization failed: ${error}`));
           return;
@@ -140,7 +215,17 @@ export class GitLabOAuthManager implements TokenProvider {
 
         if (!authCode || responseState !== state) {
           res.statusCode = 400;
-          res.end('Invalid callback. You can close this tab.');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(
+            renderOAuthResultPage({
+              status: 'error',
+              title: 'Invalid OAuth Callback',
+              message: 'Authorization code is missing or state verification failed.',
+              hint: 'Return to your AI agent and retry the request.',
+              actionHref: localEntryUrl,
+              actionLabel: 'Start OAuth Again'
+            })
+          );
           server.close();
           reject(new Error('Invalid OAuth callback: code/state mismatch.'));
           return;
@@ -148,10 +233,18 @@ export class GitLabOAuthManager implements TokenProvider {
 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.end('<html><body><h3>Authorization completed. You can close this tab.</h3></body></html>');
+        res.end(
+          renderOAuthResultPage({
+            status: 'success',
+            title: 'Authorization Completed',
+            message: 'GitLab token is saved. You can return to your AI agent.',
+            hint: 'This tab can be closed now.'
+          })
+        );
         server.close();
         resolve(authCode);
       });
+
       server.on('error', (error) => {
         reject(
           new Error(
@@ -285,6 +378,111 @@ function hasOpenCommand(platform: NodeJS.Platform): boolean {
   }
 }
 
+class OAuthRefreshError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: string
+  ) {
+    super(`Failed to refresh OAuth token: ${status} ${body}`);
+    this.name = 'OAuthRefreshError';
+  }
+}
+
+function shouldReloginOnRefreshFailure(error: unknown): boolean {
+  if (!(error instanceof OAuthRefreshError)) {
+    return false;
+  }
+
+  if (error.status === 400 || error.status === 401) {
+    return true;
+  }
+
+  return false;
+}
+
+function acquireOauthLock(lockFilePath: string): { acquired: boolean; release: () => void } {
+  let fd: number | undefined;
+  try {
+    fd = openSync(lockFilePath, 'wx');
+  } catch (error) {
+    const e = error as NodeJS.ErrnoException;
+    if (e.code !== 'EEXIST') {
+      throw error;
+    }
+
+    if (isStaleLock(lockFilePath)) {
+      try {
+        unlinkSync(lockFilePath);
+      } catch {
+        // ignore race
+      }
+      return acquireOauthLock(lockFilePath);
+    }
+
+    return {
+      acquired: false,
+      release: () => {}
+    };
+  }
+
+  const payload = JSON.stringify(
+    {
+      pid: process.pid,
+      startedAt: new Date().toISOString()
+    },
+    null,
+    2
+  );
+  writeFileSync(fd, payload, 'utf8');
+  closeSync(fd);
+
+  let released = false;
+  return {
+    acquired: true,
+    release: () => {
+      if (released) {
+        return;
+      }
+      released = true;
+      try {
+        unlinkSync(lockFilePath);
+      } catch {
+        // ignore
+      }
+    }
+  };
+}
+
+function isStaleLock(lockFilePath: string): boolean {
+  try {
+    const raw = readFileSync(lockFilePath, 'utf8');
+    const parsed = JSON.parse(raw) as { pid?: number };
+    if (!parsed.pid || !Number.isInteger(parsed.pid)) {
+      return true;
+    }
+    return !isProcessAlive(parsed.pid);
+  } catch {
+    return true;
+  }
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    const e = error as NodeJS.ErrnoException;
+    if (e.code === 'EPERM') {
+      return true;
+    }
+    return false;
+  }
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function renderOAuthEntryPage(authorizeUrl: string): string {
   const escapedUrl = authorizeUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
@@ -317,4 +515,70 @@ function renderOAuthEntryPage(authorizeUrl: string): string {
     </script>
   </body>
 </html>`;
+}
+
+function renderOAuthResultPage(input: {
+  status: 'success' | 'error';
+  title: string;
+  message: string;
+  hint?: string;
+  actionHref?: string;
+  actionLabel?: string;
+}): string {
+  const title = escapeHtml(input.title);
+  const message = escapeHtml(input.message);
+  const hint = input.hint ? escapeHtml(input.hint) : '';
+  const isSuccess = input.status === 'success';
+  const borderColor = isSuccess ? '#14532d' : '#7f1d1d';
+  const badgeColor = isSuccess ? '#22c55e' : '#ef4444';
+  const bgTop = isSuccess ? '#052e16' : '#450a0a';
+  const button =
+    input.actionHref && input.actionLabel
+      ? `<a class="btn" href="${escapeHtmlAttr(input.actionHref)}">${escapeHtml(
+          input.actionLabel
+        )}</a>`
+      : '';
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; background: radial-gradient(circle at top, ${bgTop}, #0b1220 55%); color: #e5e7eb; min-height: 100vh; }
+      .wrap { max-width: 680px; margin: 40px auto; }
+      .card { background: #121a2b; border: 1px solid ${borderColor}; border-radius: 14px; padding: 28px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+      .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: ${badgeColor}; color: #fff; }
+      h1 { margin: 12px 0 8px; font-size: 24px; }
+      p { margin: 0 0 12px; color: #cbd5e1; line-height: 1.55; }
+      .hint { font-size: 13px; color: #94a3b8; }
+      .btn { display: inline-block; margin-top: 10px; background: #2563eb; color: #fff; text-decoration: none; padding: 10px 14px; border-radius: 8px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <span class="badge">${isSuccess ? 'Success' : 'Error'}</span>
+        <h1>${title}</h1>
+        <p>${message}</p>
+        ${hint ? `<p class="hint">${hint}</p>` : ''}
+        ${button}
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeHtmlAttr(value: string): string {
+  return escapeHtml(value);
 }

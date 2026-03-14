@@ -17,6 +17,7 @@ MCP server for GitLab integration (TypeScript + Node.js).
 Остальное работает по дефолту:
 - OAuth auto-login при отсутствии токена.
 - instance-aware token store в `~/.config/gitlab-mcp/<gitlab-host>/token.json`.
+- OAuth-flow lock на instance (`<tokenStorePath>.oauth.lock`) для исключения гонки callback-порта.
 - auto-refresh access token.
 - поддержка явного `project` в tool input и fallback-резолва проекта.
 

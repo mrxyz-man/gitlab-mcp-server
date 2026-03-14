@@ -12,14 +12,24 @@ import type {
 } from '../../domain/ports/gitlab-api';
 import { ConfigurationError } from '../../shared/errors';
 import type { TokenProvider } from '../auth/token-provider';
+import { HttpClient } from '../http/http-client';
 
 export class GitLabApiClient implements GitLabApiPort {
+  private readonly httpClient: HttpClient;
+
   constructor(
     private readonly options: {
       apiUrl: string;
       tokenProvider: TokenProvider;
     }
-  ) {}
+  ) {
+    this.httpClient = new HttpClient({
+      service: 'gitlab',
+      timeoutMs: 12_000,
+      maxRetries: 2,
+      retryBaseDelayMs: 200
+    });
+  }
 
   async listProjects(): Promise<GitLabProject[]> {
     const data = await this.request<GitLabProjectApi[]>('/projects?simple=true&membership=true');
@@ -147,21 +157,27 @@ export class GitLabApiClient implements GitLabApiPort {
       );
     }
 
-    const response = await fetch(`${this.options.apiUrl}${path}`, {
-      ...init,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        ...(init?.headers ?? {})
-      }
-    });
+    const mergedHeaders: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json'
+    };
 
-    if (!response.ok) {
-      const body = await safeReadBody(response);
-      throw new Error(`GitLab API ${response.status}: ${body}`);
+    const hasBody = Boolean(init?.body);
+    if (hasBody) {
+      mergedHeaders['Content-Type'] = 'application/json';
     }
 
-    return (await response.json()) as T;
+    const fromInit = init?.headers;
+    if (fromInit && typeof fromInit === 'object' && !Array.isArray(fromInit)) {
+      Object.assign(mergedHeaders, fromInit as Record<string, string>);
+    }
+
+    return this.httpClient.requestJson<T>({
+      url: `${this.options.apiUrl}${path}`,
+      method: init?.method ?? 'GET',
+      headers: mergedHeaders,
+      body: typeof init?.body === 'string' ? init.body : undefined
+    });
   }
 }
 
@@ -223,12 +239,4 @@ function mapLabel(label: GitLabLabelApi): GitLabLabel {
 
 function encodeProjectRef(project: string | number): string {
   return encodeURIComponent(String(project));
-}
-
-async function safeReadBody(response: Response): Promise<string> {
-  try {
-    return await response.text();
-  } catch {
-    return 'Unable to read response body';
-  }
 }
