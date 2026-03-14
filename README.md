@@ -5,7 +5,10 @@ MCP server for GitLab integration (TypeScript + Node.js).
 Полный пользовательский сценарий подключения к ИИ-агенту:
 - `docs/USER_GUIDE.md`
 
-Основной сценарий: добавить сервер в `~/.codex/config.toml` (готовый блок есть в `docs/USER_GUIDE.md`).
+Основной сценарий: модель `multi-instance`.
+- Один MCP-блок в `~/.codex/config.toml` на один GitLab instance.
+- Для `gitlab.com` и каждого self-hosted GitLab добавляется отдельный блок.
+- Готовые блоки есть в `docs/USER_GUIDE.md`.
 
 Для конечного пользователя обычно достаточно:
 1. Зарегистрировать GitLab OAuth application.
@@ -13,9 +16,9 @@ MCP server for GitLab integration (TypeScript + Node.js).
 
 Остальное работает по дефолту:
 - OAuth auto-login при отсутствии токена.
-- token store в `~/.config/gitlab-mcp/token.json`.
+- instance-aware token store в `~/.config/gitlab-mcp/<gitlab-host>/token.json`.
 - auto-refresh access token.
-- автоопределение проекта из git remote текущего `cwd`.
+- поддержка явного `project` в tool input и fallback-резолва проекта.
 
 ## Local setup (development)
 

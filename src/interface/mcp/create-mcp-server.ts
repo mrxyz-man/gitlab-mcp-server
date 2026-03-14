@@ -10,7 +10,6 @@ import { HealthCheckUseCase } from '../../application/use-cases/health-check';
 import { ListLabelsUseCase } from '../../application/use-cases/list-labels';
 import { ListIssuesUseCase } from '../../application/use-cases/list-issues';
 import { UpdateIssueLabelsUseCase } from '../../application/use-cases/update-issue-labels';
-import { GroupOAuthTokenProvider } from '../../infrastructure/auth/group-oauth-token-provider';
 import { GitLabOAuthManager } from '../../infrastructure/auth/gitlab-oauth-manager';
 import { StaticTokenProvider } from '../../infrastructure/auth/token-provider';
 import { GitLabApiClient } from '../../infrastructure/gitlab/gitlab-api-client';
@@ -21,20 +20,16 @@ export function createMcpServer(): McpServer {
   const config = loadConfig();
   const tokenProvider =
     config.gitlab.authMode === 'oauth'
-      ? new GroupOAuthTokenProvider({
+      ? new GitLabOAuthManager({
           apiUrl: config.gitlab.apiUrl,
-          defaultProvider: new GitLabOAuthManager({
-            apiUrl: config.gitlab.apiUrl,
-            clientId: config.gitlab.oauth.clientId,
-            clientSecret: config.gitlab.oauth.clientSecret,
-            redirectUri: config.gitlab.oauth.redirectUri,
-            scopes: config.gitlab.oauth.scopes,
-            bootstrapAccessToken: config.gitlab.accessToken,
-            tokenStorePath: config.gitlab.oauth.tokenStorePath,
-            autoLogin: config.gitlab.oauth.autoLogin,
-            openBrowser: config.gitlab.oauth.openBrowser
-          }),
-          groupConfigs: config.gitlab.groupOAuthConfigs
+          clientId: config.gitlab.oauth.clientId,
+          clientSecret: config.gitlab.oauth.clientSecret,
+          redirectUri: config.gitlab.oauth.redirectUri,
+          scopes: config.gitlab.oauth.scopes,
+          bootstrapAccessToken: config.gitlab.accessToken,
+          tokenStorePath: config.gitlab.oauth.tokenStorePath,
+          autoLogin: config.gitlab.oauth.autoLogin,
+          openBrowser: config.gitlab.oauth.openBrowser
         })
       : new StaticTokenProvider(config.gitlab.accessToken);
 

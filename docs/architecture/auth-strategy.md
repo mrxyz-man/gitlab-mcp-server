@@ -7,6 +7,10 @@
 Основной режим: **OAuth 2.0 через GitLab Applications**.  
 Резервный режим: **PAT** для локальной отладки и аварийных сценариев.
 
+Базовая операционная модель: **multi-instance**.
+- один запуск MCP-сервера обслуживает один `GITLAB_API_URL`;
+- для нескольких GitLab instances рекомендуется поднимать отдельные MCP-конфиги.
+
 ## Почему OAuth как основной
 
 1. Управляемые scopes и централизованный lifecycle токенов.
@@ -22,7 +26,7 @@
     - `GITLAB_OAUTH_CLIENT_SECRET`
     - `GITLAB_OAUTH_REDIRECT_URI`
     - `GITLAB_OAUTH_SCOPES` (минимум `api`)
-    - `GITLAB_OAUTH_TOKEN_STORE_PATH` (default `~/.config/gitlab-mcp/token.json`)
+    - `GITLAB_OAUTH_TOKEN_STORE_PATH` (default `~/.config/gitlab-mcp/<gitlab-host>/token.json`)
     - `GITLAB_OAUTH_AUTO_LOGIN=true` для интерактивной авторизации
     - `GITLAB_OAUTH_OPEN_BROWSER=true|false` (в headless обычно `false`)
 - `GITLAB_AUTH_MODE=pat`
@@ -35,7 +39,7 @@
 3. Если token отсутствует, MCP сервер автоматически открывает страницу авторизации GitLab в браузере.
    В headless окружении сервер выводит authorize URL в лог для ручного открытия.
 4. После callback сервер получает `access_token` и `refresh_token`.
-5. Токены сохраняются в `gitlab-mcp-token.json` (или путь из `GITLAB_OAUTH_TOKEN_STORE_PATH`).
+5. Токены сохраняются в instance-aware token store (или путь из `GITLAB_OAUTH_TOKEN_STORE_PATH`).
 6. MCP сервер использует token как Bearer для GitLab API.
 
 ## Текущая реализация refresh flow

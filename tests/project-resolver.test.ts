@@ -18,7 +18,6 @@ function makeConfig(overrides?: ConfigOverrides): AppConfig {
         autoLogin: true,
         openBrowser: true
       },
-      groupOAuthConfigs: {},
       defaultProject: undefined,
       autoResolveProjectFromGit: true,
       autoDetectedProject: undefined,
