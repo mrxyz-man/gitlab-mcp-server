@@ -93,7 +93,7 @@ export class GitLabOAuthManager implements TokenProvider {
   }
 
   private async waitForTokenFromOtherProcess(lockFilePath: string): Promise<StoredOAuthToken> {
-    const maxWaitMs = 2 * 60 * 1000;
+    const maxWaitMs = 15 * 1000;
     const pollMs = 1000;
     let elapsed = 0;
 
@@ -125,7 +125,7 @@ export class GitLabOAuthManager implements TokenProvider {
     }
 
     throw new Error(
-      'Timed out waiting for OAuth token from another process. Retry request or complete authorization in the first window.'
+      `Timed out waiting for OAuth token from another process. Complete OAuth in the first window or remove stale lock: ${lockFilePath}`
     );
   }
 
@@ -171,6 +171,7 @@ export class GitLabOAuthManager implements TokenProvider {
     const localEntryUrl = `${redirect.protocol}//${redirect.host}/`;
 
     const code = await new Promise<string>((resolve, reject) => {
+      let settled = false;
       const server = createServer((req, res) => {
         if (!req.url) {
           return;
@@ -209,6 +210,7 @@ export class GitLabOAuthManager implements TokenProvider {
             })
           );
           server.close();
+          settled = true;
           reject(new Error(`OAuth authorization failed: ${error}`));
           return;
         }
@@ -227,6 +229,7 @@ export class GitLabOAuthManager implements TokenProvider {
             })
           );
           server.close();
+          settled = true;
           reject(new Error('Invalid OAuth callback: code/state mismatch.'));
           return;
         }
@@ -242,10 +245,12 @@ export class GitLabOAuthManager implements TokenProvider {
           })
         );
         server.close();
+        settled = true;
         resolve(authCode);
       });
 
       server.on('error', (error) => {
+        settled = true;
         reject(
           new Error(
             `OAuth callback server failed on ${redirect.hostname}:${resolvePort(redirect)}: ${error.message}`
@@ -262,6 +267,19 @@ export class GitLabOAuthManager implements TokenProvider {
           console.error(authorizeUrl.toString());
         }
       });
+
+      const timeoutMs = 20_000;
+      setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        server.close();
+        reject(
+          new Error(
+            `OAuth was not completed in time. Open ${localEntryUrl} to continue, or use ${authorizeUrl.toString()}`
+          )
+        );
+      }, timeoutMs);
     });
 
     const tokenResponse = await fetch(`${this.oauthBaseUrl}/oauth/token`, {

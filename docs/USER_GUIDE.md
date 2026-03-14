@@ -168,6 +168,11 @@ npx -y gitlab-mcp-agent-server
 3. Если lock застрял после краша, удали stale lock:
    - `<tokenStorePath>.oauth.lock`
 
+`gitlab_list_issues`/другой tool уходит в timeout после удаления token:
+1. Проверь stale lock и удали его:
+   - `rm -f ~/.config/gitlab-mcp/<gitlab-host>/token.json.oauth.lock`
+2. Повтори запрос и заверши OAuth в браузере в течение окна авторизации.
+
 ## 10. Advanced (необязательно)
 
 Если нужен тонкий контроль, можно использовать:
