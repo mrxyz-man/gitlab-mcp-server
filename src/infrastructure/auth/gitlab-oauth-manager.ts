@@ -85,6 +85,12 @@ export class GitLabOAuthManager implements TokenProvider {
     if (lock.acquired) {
       try {
         return await this.loginInteractively();
+      } catch (error) {
+        if (error instanceof OAuthCallbackPortBusyError) {
+          console.error(error.message);
+          return this.waitForTokenFromOtherProcess(lockFilePath);
+        }
+        throw error;
       } finally {
         lock.release();
       }
@@ -252,6 +258,15 @@ export class GitLabOAuthManager implements TokenProvider {
 
       server.on('error', (error) => {
         settled = true;
+        const errno = error as NodeJS.ErrnoException;
+        if (errno.code === 'EADDRINUSE') {
+          reject(
+            new OAuthCallbackPortBusyError(
+              `OAuth callback port is busy (${redirect.hostname}:${resolvePort(redirect)}). If another OAuth flow is active, finish it and retry.`
+            )
+          );
+          return;
+        }
         reject(
           new Error(
             `OAuth callback server failed on ${redirect.hostname}:${resolvePort(redirect)}: ${error.message}`
@@ -407,6 +422,13 @@ class OAuthRefreshError extends Error {
   }
 }
 
+class OAuthCallbackPortBusyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OAuthCallbackPortBusyError';
+  }
+}
+
 function shouldReloginOnRefreshFailure(error: unknown): boolean {
   if (!(error instanceof OAuthRefreshError)) {
     return false;
@@ -475,7 +497,16 @@ function acquireOauthLock(lockFilePath: string): { acquired: boolean; release: (
 function isStaleLock(lockFilePath: string): boolean {
   try {
     const raw = readFileSync(lockFilePath, 'utf8');
-    const parsed = JSON.parse(raw) as { pid?: number };
+    const parsed = JSON.parse(raw) as { pid?: number; startedAt?: string };
+    if (parsed.startedAt) {
+      const startedAtMs = new Date(parsed.startedAt).getTime();
+      if (!Number.isNaN(startedAtMs)) {
+        const ageMs = Date.now() - startedAtMs;
+        if (ageMs > 10 * 60 * 1000) {
+          return true;
+        }
+      }
+    }
     if (!parsed.pid || !Number.isInteger(parsed.pid)) {
       return true;
     }
