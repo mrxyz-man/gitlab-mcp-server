@@ -33,6 +33,7 @@ export function createMcpServer(): McpServer {
           openBrowser: config.gitlab.oauth.openBrowser
         })
       : new StaticTokenProvider(config.gitlab.accessToken);
+  const oauthManager = tokenProvider instanceof GitLabOAuthManager ? tokenProvider : undefined;
 
   const gitlabApiClient = new GitLabApiClient({
     apiUrl: config.gitlab.apiUrl,
@@ -49,6 +50,7 @@ export function createMcpServer(): McpServer {
 
   registerTools(server, {
     config,
+    oauthManager,
     projectResolver,
     issueWorkflowPolicy,
     healthCheckUseCase: new HealthCheckUseCase(),

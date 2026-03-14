@@ -29,9 +29,32 @@ type OAuthTokenResponse = {
   expires_in?: number;
 };
 
+type OAuthStartResult =
+  | {
+      status: 'already_authorized';
+      message: string;
+    }
+  | {
+      status: 'started' | 'in_progress';
+      message: string;
+      localEntryUrl: string;
+      authorizeUrl: string;
+    }
+  | {
+      status: 'waiting_other_process';
+      message: string;
+      lockFilePath: string;
+    };
+
 export class GitLabOAuthManager implements TokenProvider {
   private readonly tokenStore: OAuthTokenStore;
   private readonly oauthBaseUrl: string;
+  private pendingOauth?: {
+    localEntryUrl: string;
+    authorizeUrl: string;
+    startedAt: string;
+    promise: Promise<void>;
+  };
 
   constructor(private readonly options: GitLabOAuthManagerOptions) {
     this.tokenStore = new OAuthTokenStore(options.tokenStorePath);
@@ -76,6 +99,74 @@ export class GitLabOAuthManager implements TokenProvider {
     const interactiveToken = await this.loginInteractivelyWithLock();
     this.tokenStore.write(interactiveToken);
     return interactiveToken.accessToken;
+  }
+
+  async startOAuthAuthorization(): Promise<OAuthStartResult> {
+    const stored = this.tokenStore.read();
+    if (stored && !isExpiringSoon(stored.expiresAt)) {
+      return {
+        status: 'already_authorized',
+        message: 'OAuth token already exists and is valid.'
+      };
+    }
+
+    if (this.pendingOauth) {
+      return {
+        status: 'in_progress',
+        message: 'OAuth authorization is already in progress in this process.',
+        localEntryUrl: this.pendingOauth.localEntryUrl,
+        authorizeUrl: this.pendingOauth.authorizeUrl
+      };
+    }
+
+    const lockFilePath = `${this.options.tokenStorePath}.oauth.lock`;
+    const lock = acquireOauthLock(lockFilePath);
+    if (!lock.acquired) {
+      return {
+        status: 'waiting_other_process',
+        message: 'OAuth flow is already running in another process for this instance.',
+        lockFilePath
+      };
+    }
+
+    let links: { localEntryUrl: string; authorizeUrl: string } | undefined;
+    const promise = this.loginInteractively((readyLinks) => {
+      links = readyLinks;
+    })
+      .then((token) => {
+        this.tokenStore.write(token);
+      })
+      .finally(() => {
+        lock.release();
+        this.pendingOauth = undefined;
+      });
+
+    // Wait a short time until listener is ready and URLs are known.
+    const maxReadyWaitMs = 2_000;
+    const pollMs = 100;
+    let waited = 0;
+    while (!links && waited < maxReadyWaitMs) {
+      await sleep(pollMs);
+      waited += pollMs;
+    }
+
+    if (!links) {
+      lock.release();
+      throw new Error('Failed to start OAuth callback listener.');
+    }
+
+    this.pendingOauth = {
+      ...links,
+      startedAt: new Date().toISOString(),
+      promise
+    };
+
+    return {
+      status: 'started',
+      message: 'Open the provided URL and complete OAuth authorization.',
+      localEntryUrl: links.localEntryUrl,
+      authorizeUrl: links.authorizeUrl
+    };
   }
 
   private async loginInteractivelyWithLock(): Promise<StoredOAuthToken> {
@@ -163,7 +254,9 @@ export class GitLabOAuthManager implements TokenProvider {
     return mapTokenResponse(payload);
   }
 
-  private async loginInteractively(): Promise<StoredOAuthToken> {
+  private async loginInteractively(
+    onReady?: (links: { localEntryUrl: string; authorizeUrl: string }) => void
+  ): Promise<StoredOAuthToken> {
     this.assertOAuthClientCredentials();
     this.assertRedirectUri();
 
@@ -275,6 +368,10 @@ export class GitLabOAuthManager implements TokenProvider {
       });
 
       server.listen(resolvePort(redirect), redirect.hostname, () => {
+        onReady?.({
+          localEntryUrl,
+          authorizeUrl: authorizeUrl.toString()
+        });
         const opened = this.options.openBrowser && openInBrowser(localEntryUrl);
         if (!opened) {
           console.error('Open this local URL to start OAuth authorization:');

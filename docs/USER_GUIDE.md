@@ -143,6 +143,7 @@ npx -y gitlab-mcp-agent-server
 
 ## 8. Быстрая проверка работоспособности
 
+0. Если нужен OAuth URL прямо в чате агента, вызови `gitlab_oauth_start`.
 1. Вызови `gitlab_list_labels`.
 2. Создай issue: `gitlab_create_issue`.
 3. Получи issue: `gitlab_get_issue`.
@@ -176,6 +177,7 @@ npx -y gitlab-mcp-agent-server
 1. Проверь stale lock и удали его:
    - `rm -f ~/.config/gitlab-mcp/<gitlab-host>/token.json.oauth.lock`
 2. Повтори запрос и заверши OAuth в браузере в течение окна авторизации.
+3. Или сначала вызови `gitlab_oauth_start` и открой `localEntryUrl` из ответа.
 
 ## 10. Advanced (необязательно)
 

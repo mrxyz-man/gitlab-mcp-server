@@ -11,6 +11,7 @@ import type { HealthCheckUseCase } from '../../application/use-cases/health-chec
 import type { ListLabelsUseCase } from '../../application/use-cases/list-labels';
 import type { ListIssuesUseCase } from '../../application/use-cases/list-issues';
 import type { UpdateIssueLabelsUseCase } from '../../application/use-cases/update-issue-labels';
+import type { GitLabOAuthManager } from '../../infrastructure/auth/gitlab-oauth-manager';
 import type { AppConfig } from '../../shared/config';
 import { PolicyError } from '../../shared/errors';
 
@@ -18,6 +19,7 @@ export function registerTools(
   server: McpServer,
   deps: {
     config: AppConfig;
+    oauthManager?: GitLabOAuthManager;
     projectResolver: ProjectResolver;
     issueWorkflowPolicy: IssueWorkflowPolicy;
     healthCheckUseCase: HealthCheckUseCase;
@@ -30,6 +32,24 @@ export function registerTools(
     ensureLabelsUseCase: EnsureLabelsUseCase;
   }
 ): void {
+  if (deps.oauthManager) {
+    server.registerTool(
+      'gitlab_oauth_start',
+      {
+        title: 'GitLab OAuth Start',
+        description:
+          'Starts OAuth authorization flow and returns links to complete authorization in browser.',
+        inputSchema: {}
+      },
+      async () => {
+        return runTool(async () => {
+          const result = await deps.oauthManager?.startOAuthAuthorization();
+          return result ?? { status: 'unsupported', message: 'OAuth mode is not enabled.' };
+        });
+      }
+    );
+  }
+
   server.registerTool(
     'health_check',
     {
