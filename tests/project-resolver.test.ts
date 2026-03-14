@@ -15,6 +15,7 @@ function makeConfig(overrides?: ConfigOverrides): AppConfig {
       oauth: {
         scopes: ['api'],
         tokenStorePath: './gitlab-mcp-token.json',
+        callbackTimeoutMs: 180000,
         autoLogin: true,
         openBrowser: true
       },

@@ -60,6 +60,7 @@ export GITLAB_AUTH_MODE="oauth";
 export GITLAB_OAUTH_CLIENT_ID="<GITLAB_COM_APP_ID>";
 export GITLAB_OAUTH_CLIENT_SECRET="<GITLAB_COM_APP_SECRET>";
 export GITLAB_OAUTH_REDIRECT_URI="http://127.0.0.1:8787/oauth/callback";
+export GITLAB_OAUTH_CALLBACK_TIMEOUT_MS="180000";
 export GITLAB_OAUTH_AUTO_LOGIN="true";
 export GITLAB_OAUTH_OPEN_BROWSER="true";
 
@@ -77,6 +78,7 @@ export GITLAB_AUTH_MODE="oauth";
 export GITLAB_OAUTH_CLIENT_ID="<WORK_APP_ID>";
 export GITLAB_OAUTH_CLIENT_SECRET="<WORK_APP_SECRET>";
 export GITLAB_OAUTH_REDIRECT_URI="http://127.0.0.1:8788/oauth/callback";
+export GITLAB_OAUTH_CALLBACK_TIMEOUT_MS="180000";
 export GITLAB_OAUTH_AUTO_LOGIN="true";
 export GITLAB_OAUTH_OPEN_BROWSER="true";
 
@@ -121,6 +123,8 @@ npx -y gitlab-mcp-agent-server
 2. Ограничь права файла:
    - `chmod 600 /home/<user>/.config/gitlab-mcp/gitlab.com/token.json`
 3. Для headless окружений ставь `GITLAB_OAUTH_OPEN_BROWSER=false`.
+4. При медленном интерактивном flow увеличь окно ожидания callback:
+   - `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS=180000` (или выше).
 
 ## 7. Сценарий пользовательского запроса
 

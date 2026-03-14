@@ -15,6 +15,7 @@ type GitLabOAuthManagerOptions = {
   scopes: string[];
   bootstrapAccessToken?: string;
   tokenStorePath: string;
+  callbackTimeoutMs?: number;
   autoLogin: boolean;
   openBrowser: boolean;
 };
@@ -107,7 +108,7 @@ export class GitLabOAuthManager implements TokenProvider {
         return stored;
       }
 
-    if (!existsSync(lockFilePath) && stored?.refreshToken) {
+      if (!existsSync(lockFilePath) && stored?.refreshToken) {
         try {
           const refreshed = await this.refreshToken(stored.refreshToken);
           this.tokenStore.write(refreshed);
@@ -268,7 +269,7 @@ export class GitLabOAuthManager implements TokenProvider {
         }
       });
 
-      const timeoutMs = 20_000;
+      const timeoutMs = this.options.callbackTimeoutMs ?? 180_000;
       setTimeout(() => {
         if (settled) {
           return;

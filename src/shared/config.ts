@@ -13,6 +13,7 @@ const EnvSchema = z.object({
   GITLAB_OAUTH_REDIRECT_URI: z.string().optional(),
   GITLAB_OAUTH_SCOPES: z.string().default('api'),
   GITLAB_OAUTH_TOKEN_STORE_PATH: z.string().optional(),
+  GITLAB_OAUTH_CALLBACK_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
   GITLAB_OAUTH_AUTO_LOGIN: z
     .enum(['true', 'false'])
     .optional()
@@ -61,6 +62,7 @@ export type AppConfig = {
       redirectUri?: string;
       scopes: string[];
       tokenStorePath: string;
+      callbackTimeoutMs: number;
       autoLogin: boolean;
       openBrowser: boolean;
     };
@@ -97,6 +99,7 @@ export function loadConfig(): AppConfig {
         redirectUri: env.GITLAB_OAUTH_REDIRECT_URI,
         scopes: splitCsv(env.GITLAB_OAUTH_SCOPES),
         tokenStorePath: defaultTokenStorePath,
+        callbackTimeoutMs: env.GITLAB_OAUTH_CALLBACK_TIMEOUT_MS ?? 180_000,
         autoLogin: env.GITLAB_OAUTH_AUTO_LOGIN,
         openBrowser: env.GITLAB_OAUTH_OPEN_BROWSER
       },
