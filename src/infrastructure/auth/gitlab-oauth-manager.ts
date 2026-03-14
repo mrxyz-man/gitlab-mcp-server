@@ -96,9 +96,27 @@ export class GitLabOAuthManager implements TokenProvider {
       );
     }
 
-    const interactiveToken = await this.loginInteractivelyWithLock();
-    this.tokenStore.write(interactiveToken);
-    return interactiveToken.accessToken;
+    const start = await this.startOAuthAuthorization();
+    if (start.status === 'already_authorized') {
+      const token = this.tokenStore.read();
+      if (token?.accessToken) {
+        return token.accessToken;
+      }
+    }
+
+    if (start.status === 'started' || start.status === 'in_progress') {
+      throw new ConfigurationError(
+        `OAuth authorization is required. Open: ${start.localEntryUrl} (or direct: ${start.authorizeUrl}), complete authorization, then retry the tool call.`
+      );
+    }
+
+    if (start.status === 'waiting_other_process') {
+      throw new ConfigurationError(
+        `OAuth flow is running in another process for this instance. ${start.message} Lock: ${start.lockFilePath}`
+      );
+    }
+
+    throw new ConfigurationError(start.message);
   }
 
   async startOAuthAuthorization(): Promise<OAuthStartResult> {
