@@ -93,7 +93,7 @@
 - [x] Разделить domain ports по модулям: issues/projects/labels/members.
 - [x] Реализовать модульные инфраструктурные клиенты и общий base слой.
 - [x] Мигрировать use-cases/MCP handlers на новую модульную структуру.
-- [ ] Реализовать wait-and-continue OAuth (автопродолжение текущего запроса после авторизации).
+- [x] Реализовать wait-and-continue OAuth (автопродолжение текущего запроса после авторизации).
 - [ ] Добавить auto-open OAuth ссылки в браузере с fallback.
 - [ ] Усилить lock/timeout/recovery для конкурентного OAuth flow.
 - [ ] Добавить regression test suite для модульного API и seamless OAuth.

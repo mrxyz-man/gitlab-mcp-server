@@ -1,11 +1,11 @@
 # TASK-305: Seamless OAuth Wait-and-Continue
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `backend`
 - Priority: `critical`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `architect, developer, tester`
 
 ## Objective
@@ -33,12 +33,16 @@
 2. `Добавить retry-after-auth path на уровне API request.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `OAuth token missing flow переведен на wait-and-continue вместо немедленного ConfigurationError.`
+- `2026-03-25` — `Для started/in_progress добавлено ожидание pending OAuth session с bounded timeout.`
+- `2026-03-25` — `Для waiting_other_process добавлено ожидание токена из другого процесса в рамках callback timeout budget.`
+- `2026-03-25` — `Прогнаны проверки: typecheck + tests (7 suites, 16 tests) успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Текущий tool-вызов теперь может дождаться завершения OAuth и продолжиться автоматически без ручного retry.`
 - Follow-ups: `TASK-306, TASK-307`

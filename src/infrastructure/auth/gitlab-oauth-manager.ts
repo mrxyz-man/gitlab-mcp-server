@@ -105,15 +105,16 @@ export class GitLabOAuthManager implements TokenProvider {
     }
 
     if (start.status === 'started' || start.status === 'in_progress') {
-      throw new ConfigurationError(
-        `OAuth authorization is required. Open: ${start.localEntryUrl} (or direct: ${start.authorizeUrl}), complete authorization, then retry the tool call.`
-      );
+      console.error('OAuth authorization started. Waiting for completion...');
+      console.error(`Open: ${start.localEntryUrl}`);
+      console.error(`Direct GitLab URL: ${start.authorizeUrl}`);
+      const token = await this.waitForPendingOAuthSession();
+      return token.accessToken;
     }
 
     if (start.status === 'waiting_other_process') {
-      throw new ConfigurationError(
-        `OAuth flow is running in another process for this instance. ${start.message} Lock: ${start.lockFilePath}`
-      );
+      const token = await this.waitForTokenFromOtherProcess(start.lockFilePath);
+      return token.accessToken;
     }
 
     throw new ConfigurationError(start.message);
@@ -209,7 +210,7 @@ export class GitLabOAuthManager implements TokenProvider {
   }
 
   private async waitForTokenFromOtherProcess(lockFilePath: string): Promise<StoredOAuthToken> {
-    const maxWaitMs = 15 * 1000;
+    const maxWaitMs = this.options.callbackTimeoutMs ?? 180_000;
     const pollMs = 1000;
     let elapsed = 0;
 
@@ -243,6 +244,26 @@ export class GitLabOAuthManager implements TokenProvider {
     throw new Error(
       `Timed out waiting for OAuth token from another process. Complete OAuth in the first window or remove stale lock: ${lockFilePath}`
     );
+  }
+
+  private async waitForPendingOAuthSession(): Promise<StoredOAuthToken> {
+    if (!this.pendingOauth) {
+      throw new Error('OAuth session is not initialized.');
+    }
+
+    const timeoutMs = this.options.callbackTimeoutMs ?? 180_000;
+    await withTimeout(
+      this.pendingOauth.promise,
+      timeoutMs,
+      `OAuth was not completed in time (${timeoutMs}ms).`
+    );
+
+    const token = this.tokenStore.read();
+    if (!token || isExpiringSoon(token.expiresAt)) {
+      throw new Error('OAuth completed but token was not stored correctly.');
+    }
+
+    return token;
   }
 
   private async refreshToken(refreshToken: string): Promise<StoredOAuthToken> {
@@ -646,6 +667,21 @@ function isProcessAlive(pid: number): boolean {
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+  let timeoutId: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 }
 
 function renderOAuthEntryPage(authorizeUrl: string): string {
