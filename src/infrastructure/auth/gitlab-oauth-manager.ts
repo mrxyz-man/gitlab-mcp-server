@@ -46,6 +46,24 @@ type OAuthStartResult =
       lockFilePath: string;
     };
 
+type OauthLockPayload = {
+  pid: number;
+  sessionId: string;
+  startedAt: string;
+  updatedAt: string;
+};
+
+type OauthLockHandle = {
+  acquired: boolean;
+  lockFilePath: string;
+  sessionId?: string;
+  touch: () => void;
+  release: () => void;
+};
+
+const OAUTH_LOCK_STALE_MS = 10 * 60 * 1000;
+const OAUTH_LOCK_HEARTBEAT_MS = 5 * 1000;
+
 export class GitLabOAuthManager implements TokenProvider {
   private readonly tokenStore: OAuthTokenStore;
   private readonly oauthBaseUrl: string;
@@ -53,6 +71,7 @@ export class GitLabOAuthManager implements TokenProvider {
     localEntryUrl: string;
     authorizeUrl: string;
     startedAt: string;
+    lockFilePath: string;
     promise: Promise<void>;
   };
 
@@ -149,6 +168,8 @@ export class GitLabOAuthManager implements TokenProvider {
     }
 
     let links: { localEntryUrl: string; authorizeUrl: string } | undefined;
+    const heartbeat = setInterval(() => lock.touch(), OAUTH_LOCK_HEARTBEAT_MS);
+    lock.touch();
     const promise = this.loginInteractively((readyLinks) => {
       links = readyLinks;
     })
@@ -156,6 +177,7 @@ export class GitLabOAuthManager implements TokenProvider {
         this.tokenStore.write(token);
       })
       .finally(() => {
+        clearInterval(heartbeat);
         lock.release();
         this.pendingOauth = undefined;
       });
@@ -177,6 +199,7 @@ export class GitLabOAuthManager implements TokenProvider {
     this.pendingOauth = {
       ...links,
       startedAt: new Date().toISOString(),
+      lockFilePath,
       promise
     };
 
@@ -222,6 +245,14 @@ export class GitLabOAuthManager implements TokenProvider {
       const stored = this.tokenStore.read();
       if (stored && !isExpiringSoon(stored.expiresAt)) {
         return stored;
+      }
+
+      if (existsSync(lockFilePath) && isStaleLock(lockFilePath)) {
+        try {
+          unlinkSync(lockFilePath);
+        } catch {
+          // ignore race with another process
+        }
       }
 
       if (!existsSync(lockFilePath) && stored?.refreshToken) {
@@ -615,8 +646,17 @@ function shouldReloginOnRefreshFailure(error: unknown): boolean {
   return false;
 }
 
-function acquireOauthLock(lockFilePath: string): { acquired: boolean; release: () => void } {
-  let fd: number | undefined;
+function acquireOauthLock(lockFilePath: string): OauthLockHandle {
+  const sessionId = randomBytes(8).toString('hex');
+  const now = new Date().toISOString();
+  const payload: OauthLockPayload = {
+    pid: process.pid,
+    sessionId,
+    startedAt: now,
+    updatedAt: now
+  };
+
+  let fd: number;
   try {
     fd = openSync(lockFilePath, 'wx');
   } catch (error) {
@@ -636,30 +676,50 @@ function acquireOauthLock(lockFilePath: string): { acquired: boolean; release: (
 
     return {
       acquired: false,
+      lockFilePath,
+      touch: () => {},
       release: () => {}
     };
   }
 
-  const payload = JSON.stringify(
-    {
-      pid: process.pid,
-      startedAt: new Date().toISOString()
-    },
-    null,
-    2
-  );
-  writeFileSync(fd, payload, 'utf8');
+  writeFileSync(fd, JSON.stringify(payload, null, 2), 'utf8');
   closeSync(fd);
 
   let released = false;
+  const touch = () => {
+    if (released) {
+      return;
+    }
+    try {
+      const current = readOauthLockPayload(lockFilePath);
+      if (!current || current.sessionId !== sessionId) {
+        return;
+      }
+      const next: OauthLockPayload = {
+        ...current,
+        updatedAt: new Date().toISOString()
+      };
+      writeFileSync(lockFilePath, JSON.stringify(next, null, 2), 'utf8');
+    } catch {
+      // ignore touch errors
+    }
+  };
+
   return {
     acquired: true,
+    lockFilePath,
+    sessionId,
+    touch,
     release: () => {
       if (released) {
         return;
       }
       released = true;
       try {
+        const current = readOauthLockPayload(lockFilePath);
+        if (!current || current.sessionId !== sessionId) {
+          return;
+        }
         unlinkSync(lockFilePath);
       } catch {
         // ignore
@@ -670,23 +730,41 @@ function acquireOauthLock(lockFilePath: string): { acquired: boolean; release: (
 
 function isStaleLock(lockFilePath: string): boolean {
   try {
-    const raw = readFileSync(lockFilePath, 'utf8');
-    const parsed = JSON.parse(raw) as { pid?: number; startedAt?: string };
-    if (parsed.startedAt) {
-      const startedAtMs = new Date(parsed.startedAt).getTime();
-      if (!Number.isNaN(startedAtMs)) {
-        const ageMs = Date.now() - startedAtMs;
-        if (ageMs > 10 * 60 * 1000) {
-          return true;
-        }
-      }
-    }
-    if (!parsed.pid || !Number.isInteger(parsed.pid)) {
+    const parsed = readOauthLockPayload(lockFilePath);
+    if (!parsed) {
       return true;
     }
+
+    const updatedAtMs = new Date(parsed.updatedAt ?? parsed.startedAt).getTime();
+    if (!Number.isNaN(updatedAtMs)) {
+      const ageMs = Date.now() - updatedAtMs;
+      if (ageMs > OAUTH_LOCK_STALE_MS) {
+        return true;
+      }
+    }
+
     return !isProcessAlive(parsed.pid);
   } catch {
     return true;
+  }
+}
+
+function readOauthLockPayload(lockFilePath: string): OauthLockPayload | null {
+  try {
+    const raw = readFileSync(lockFilePath, 'utf8');
+    const parsed = JSON.parse(raw) as Partial<OauthLockPayload>;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+    if (!parsed.pid || !Number.isInteger(parsed.pid)) {
+      return null;
+    }
+    if (!parsed.sessionId || !parsed.startedAt || !parsed.updatedAt) {
+      return null;
+    }
+    return parsed as OauthLockPayload;
+  } catch {
+    return null;
   }
 }
 

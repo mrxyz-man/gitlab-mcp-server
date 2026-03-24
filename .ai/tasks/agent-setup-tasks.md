@@ -95,7 +95,7 @@
 - [x] Мигрировать use-cases/MCP handlers на новую модульную структуру.
 - [x] Реализовать wait-and-continue OAuth (автопродолжение текущего запроса после авторизации).
 - [x] Добавить auto-open OAuth ссылки в браузере с fallback.
-- [ ] Усилить lock/timeout/recovery для конкурентного OAuth flow.
+- [x] Усилить lock/timeout/recovery для конкурентного OAuth flow.
 - [ ] Добавить regression test suite для модульного API и seamless OAuth.
 - [ ] Обновить пользовательскую и внутреннюю документацию.
 - [ ] Применить отдельный risk plan перед merge.

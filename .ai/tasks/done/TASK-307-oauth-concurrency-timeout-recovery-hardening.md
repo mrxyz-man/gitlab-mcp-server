@@ -1,11 +1,11 @@
 # TASK-307: OAuth Concurrency, Timeout and Recovery Hardening
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `refactor`
 - Area: `security`
 - Priority: `high`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `architect, developer, tester`
 
 ## Objective
@@ -32,12 +32,16 @@
 2. `Добавить recovery path и диагностические сообщения.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Lock payload расширен: sessionId + updatedAt (owner-aware lifecycle).`
+- `2026-03-25` — `Добавлен heartbeat lock-touch во время активной OAuth session.`
+- `2026-03-25` — `Добавлен stale lock recovery в wait-loop для других процессов.`
+- `2026-03-25` — `Проверки typecheck + tests выполнены успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `OAuth lock lifecycle стал более устойчивым к stale-lock и конкурентным race-сценариям при multi-process авторизации.`
 - Follow-ups: `TASK-308`
