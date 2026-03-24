@@ -1,6 +1,6 @@
 # Testing Standards
 
-Источник истины: `.ai/agent/rules/tester-rules.md`.
+Источник истины: `.ai/system/policy/rules/tester-rules.md`.
 
 Минимум для каждой публичной MCP операции:
 - happy path;

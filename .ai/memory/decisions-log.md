@@ -5,4 +5,4 @@
 - 2026-03: Аутентификация — OAuth-first, token-store и refresh flow.
 - 2026-03: Модель подключения — multi-instance как основной сценарий.
 
-Подробности смотреть в `.ai/architecture/*` и `.ai/agent/stack-decision.md`.
+Подробности смотреть в `.ai/context/architecture/*` и `.ai/system/policy/stack-decision.md`.

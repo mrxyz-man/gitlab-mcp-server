@@ -15,6 +15,6 @@
 - контракты tool-ов стабильны и явно версионируемы.
 
 Ссылки:
-- `.ai/architecture/module-structure.md`
-- `.ai/architecture/auth-strategy.md`
-- `.ai/architecture/issue-tools-v0.md`
+- `.ai/context/architecture/module-structure.md`
+- `.ai/context/architecture/auth-strategy.md`
+- `.ai/context/architecture/issue-tools-v0.md`

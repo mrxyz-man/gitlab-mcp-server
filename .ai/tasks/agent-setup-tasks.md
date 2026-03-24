@@ -34,10 +34,10 @@
 - [ ] Определить базовую стратегию логирования и обработки ошибок.
 - [x] Ввести конфиг-политику для управления issue workflow (`enabled`, `allow_*`, `allowed_labels`).
 
-Принятое решение по стеку: `.ai/agent/stack-decision.md`.
-Принятая модульная структура: `.ai/architecture/module-structure.md`.
-Контракт issue tools v0: `.ai/architecture/issue-tools-v0.md`.
-Стратегия аутентификации: `.ai/architecture/auth-strategy.md`.
+Принятое решение по стеку: `.ai/system/policy/stack-decision.md`.
+Принятая модульная структура: `.ai/context/architecture/module-structure.md`.
+Контракт issue tools v0: `.ai/context/architecture/issue-tools-v0.md`.
+Стратегия аутентификации: `.ai/context/architecture/auth-strategy.md`.
 
 ## Этап 3. Качество и CI
 

@@ -1,6 +1,6 @@
 # Coding Style
 
-Источник истины: `.ai/agent/rules/common-rules.md`, `.ai/agent/rules/developer-rules.md`, `.ai/agent/anti-patterns-blacklist.md`.
+Источник истины: `.ai/system/policy/rules/common-rules.md`, `.ai/system/policy/rules/developer-rules.md`, `.ai/system/policy/anti-patterns-blacklist.md`.
 
 Обязательные принципы:
 - small focused changes;
@@ -16,4 +16,4 @@
 - комментарии только для `why`.
 
 Commit-policy:
-- следовать `.ai/agent/commit-rule.md` (Conventional Commits).
+- следовать `.ai/system/policy/commit-rule.md` (Conventional Commits).

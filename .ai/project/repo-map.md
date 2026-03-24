@@ -12,4 +12,4 @@
 Ownership (по умолчанию):
 - Developer: `src/**`
 - Tester: `tests/**`
-- Architect: `.ai/architecture/**`, cross-cutting decisions
+- Architect: `.ai/context/architecture/**`, cross-cutting decisions
