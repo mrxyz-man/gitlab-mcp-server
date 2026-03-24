@@ -1,9 +1,9 @@
 import type {
   GetIssueInput,
-  GitLabApiPort,
-  GitLabIssue,
+  GitLabIssuesPort,
   UpdateIssueLabelsInput
-} from '../../domain/ports/gitlab-api';
+} from '../../domain/ports/gitlab/gitlab-issues-port';
+import type { GitLabIssue } from '../../domain/ports/gitlab/common-types';
 
 export type UpdateIssueLabelsMode = 'replace' | 'add' | 'remove';
 
@@ -14,7 +14,7 @@ export type UpdateIssueLabelsRequest = UpdateIssueLabelsInput & {
 };
 
 export class UpdateIssueLabelsUseCase {
-  constructor(private readonly gitlabApi: GitLabApiPort) {}
+  constructor(private readonly gitlabApi: GitLabIssuesPort) {}
 
   async execute(input: UpdateIssueLabelsRequest): Promise<GitLabIssue> {
     const current = await this.gitlabApi.getIssue({

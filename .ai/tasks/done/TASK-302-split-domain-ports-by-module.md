@@ -1,11 +1,11 @@
 # TASK-302: Split Domain Ports by GitLab Modules
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `refactor`
 - Area: `architecture`
 - Priority: `high`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `architect, developer, tester`
 
 ## Objective
@@ -33,11 +33,15 @@
 
 ## Validation
 - [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Добавлены модульные порты: common/issues/projects/labels/members в src/domain/ports/gitlab/.`
+- `2026-03-25` — `Сохранен совместимый агрегатор: src/domain/ports/gitlab-api.ts.`
+- `2026-03-25` — `Use-cases переведены на узкие модульные порты вместо GitLabApiPort.`
+- `2026-03-25` — `Прогнан typecheck: успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Domain ports разделены по модулям, use-cases используют минимально необходимые интерфейсы, обратная совместимость сохранена через агрегатор.`
 - Follow-ups: `TASK-303`

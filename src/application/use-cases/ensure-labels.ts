@@ -1,4 +1,5 @@
-import type { EnsureLabelInput, GitLabApiPort, GitLabLabel } from '../../domain/ports/gitlab-api';
+import type { GitLabLabel } from '../../domain/ports/gitlab/common-types';
+import type { EnsureLabelInput, GitLabLabelsPort } from '../../domain/ports/gitlab/gitlab-labels-port';
 
 export type EnsureLabelsInput = {
   project: string | number;
@@ -15,7 +16,7 @@ export type EnsureLabelsOutput = {
 };
 
 export class EnsureLabelsUseCase {
-  constructor(private readonly gitlabApi: GitLabApiPort) {}
+  constructor(private readonly gitlabApi: GitLabLabelsPort) {}
 
   async execute(input: EnsureLabelsInput): Promise<EnsureLabelsOutput> {
     const existingLabels = await this.gitlabApi.listLabels({
