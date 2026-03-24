@@ -92,7 +92,7 @@
 - [x] Спроектировать модульную архитектуру GitLab API и новый OAuth-flow без ручного retry.
 - [x] Разделить domain ports по модулям: issues/projects/labels/members.
 - [x] Реализовать модульные инфраструктурные клиенты и общий base слой.
-- [ ] Мигрировать use-cases/MCP handlers на новую модульную структуру.
+- [x] Мигрировать use-cases/MCP handlers на новую модульную структуру.
 - [ ] Реализовать wait-and-continue OAuth (автопродолжение текущего запроса после авторизации).
 - [ ] Добавить auto-open OAuth ссылки в браузере с fallback.
 - [ ] Усилить lock/timeout/recovery для конкурентного OAuth flow.

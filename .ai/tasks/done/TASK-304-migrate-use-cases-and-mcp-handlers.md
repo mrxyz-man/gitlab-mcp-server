@@ -1,11 +1,11 @@
 # TASK-304: Migrate Use-Cases and MCP Handlers to Modular API
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `refactor`
 - Area: `backend`
 - Priority: `high`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `developer, tester`
 
 ## Objective
@@ -32,12 +32,15 @@
 2. `Прогнать тесты и локальные smoke-сценарии.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Проверен composition/wiring в create-mcp-server и register-tools: внешние MCP contracts без изменений.`
+- `2026-03-25` — `Use-cases работают через модульный фасад GitLabApiClient после TASK-302/303.` 
+- `2026-03-25` — `Прогнаны проверки: typecheck + tests (7 suites, 16 tests) успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Миграция use-cases/MCP handlers на модульную структуру подтверждена без изменений внешнего контракта tools.`
 - Follow-ups: `TASK-305`
