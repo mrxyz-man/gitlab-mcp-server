@@ -67,3 +67,51 @@
   - [x] визуальный success-экран;
   - [x] понятные next steps (можно закрыть вкладку / вернуться в агент);
   - [x] обработка ошибок callback на той же странице.
+
+## Этап 5. Full Issue Management (GitLab)
+
+- [ ] Расширить контракт MCP tools для issue-management до v1.
+- [ ] Добавить операции update/reopen/state transition для issue.
+- [ ] Добавить операции назначения/снятия assignee и список разработчиков проекта.
+- [ ] Добавить policy-driven label transitions (workflow статусы через labels).
+- [ ] Расширить list/filter issues (state/assignee/labels/search/pagination/sort).
+- [ ] Подготовить полную test matrix по всем issue tools.
+- [ ] Обновить пользовательскую документацию по новым операциям.
+- [ ] Зафиксировать и применить риск-план по эпику full issue management.
+
+Декомпозиция в backlog:
+- `TASK-200` (epic)
+- `TASK-201` .. `TASK-207` (микротаски)
+- `TASK-208` (risk mitigation plan)
+
+Примечание по приоритету:
+- Выполнение Этапа 5 временно приостанавливается в пользу Этапа 6 (более высокий приоритет).
+
+## Этап 6. Модульный GitLab API + Seamless OAuth (Критический приоритет)
+
+- [ ] Спроектировать модульную архитектуру GitLab API и новый OAuth-flow без ручного retry.
+- [ ] Разделить domain ports по модулям: issues/projects/labels/members.
+- [ ] Реализовать модульные инфраструктурные клиенты и общий base слой.
+- [ ] Мигрировать use-cases/MCP handlers на новую модульную структуру.
+- [ ] Реализовать wait-and-continue OAuth (автопродолжение текущего запроса после авторизации).
+- [ ] Добавить auto-open OAuth ссылки в браузере с fallback.
+- [ ] Усилить lock/timeout/recovery для конкурентного OAuth flow.
+- [ ] Добавить regression test suite для модульного API и seamless OAuth.
+- [ ] Обновить пользовательскую и внутреннюю документацию.
+- [ ] Применить отдельный risk plan перед merge.
+
+Очередь выполнения (строго):
+1. `TASK-301`
+2. `TASK-302`
+3. `TASK-303`
+4. `TASK-304`
+5. `TASK-305`
+6. `TASK-306`
+7. `TASK-307`
+8. `TASK-308`
+9. `TASK-309`
+10. `TASK-310`
+
+Декомпозиция в backlog:
+- `TASK-300` (epic)
+- `TASK-301` .. `TASK-310` (микротаски, включая риск-план)
