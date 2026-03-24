@@ -1,11 +1,11 @@
 # TASK-306: OAuth Auto-Open Browser with Graceful Fallback
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `backend`
 - Priority: `high`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `developer, tester`
 
 ## Objective
@@ -32,12 +32,16 @@
 2. `Интегрировать в OAuth manager без breaking flow.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Авто-открытие браузера переведено на асинхронный запуск с проверкой фактического успеха команды.`
+- `2026-03-25` — `Добавлен fallback launcher для linux/wsl: xdg-open -> wslview (если доступен).`
+- `2026-03-25` — `Добавлен bounded timeout для launcher-команды и диагностический reason при неуспехе.`
+- `2026-03-25` — `Прогнаны проверки: typecheck + tests успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `OAuth auto-open стал более надежным: при любой ошибке пользователь получает рабочие ссылки и понятную диагностику без падения flow.`
 - Follow-ups: `TASK-307`

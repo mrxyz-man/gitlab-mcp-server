@@ -411,13 +411,23 @@ export class GitLabOAuthManager implements TokenProvider {
           localEntryUrl,
           authorizeUrl: authorizeUrl.toString()
         });
-        const opened = this.options.openBrowser && openInBrowser(localEntryUrl);
-        if (!opened) {
+        void (async () => {
+          const openResult = this.options.openBrowser
+            ? await openInBrowser(localEntryUrl)
+            : { opened: false as const, reason: 'disabled by configuration' };
+
+          if (openResult.opened) {
+            return;
+          }
+
+          if (openResult.reason) {
+            console.error(`Could not auto-open browser: ${openResult.reason}`);
+          }
           console.error('Open this local URL to start OAuth authorization:');
           console.error(localEntryUrl);
           console.error('If local redirect does not work, use direct GitLab OAuth URL:');
           console.error(authorizeUrl.toString());
-        }
+        })();
       });
 
       const timeoutMs = this.options.callbackTimeoutMs ?? 180_000;
@@ -504,22 +514,20 @@ function toFormUrlEncoded(data: Record<string, string | undefined>): string {
   return params.toString();
 }
 
-function openInBrowser(url: string): boolean {
+async function openInBrowser(url: string): Promise<{ opened: boolean; reason?: string }> {
   const platform = process.platform;
-  if (!hasOpenCommand(platform)) {
-    return false;
+  const launcher = detectBrowserLauncher(platform);
+  if (!launcher) {
+    return { opened: false, reason: 'no supported browser opener command found' };
   }
 
-  const command =
-    platform === 'darwin'
-      ? `open "${url}"`
-      : platform === 'win32'
-        ? `start "" "${url}"`
-        : `xdg-open "${url}"`;
+  const command = launcher.command(url);
+  const result = await runCommand(command, 3_000);
+  if (!result.ok) {
+    return { opened: false, reason: `${command} failed (${result.reason})` };
+  }
 
-  exec(command, () => {});
-
-  return true;
+  return { opened: true };
 }
 
 function resolvePort(url: URL): number {
@@ -530,22 +538,52 @@ function resolvePort(url: URL): number {
   return url.protocol === 'https:' ? 443 : 80;
 }
 
-function hasOpenCommand(platform: NodeJS.Platform): boolean {
+function detectBrowserLauncher(platform: NodeJS.Platform): { command: (url: string) => string } | null {
   try {
     if (platform === 'darwin') {
       execSync('command -v open', { stdio: ['ignore', 'ignore', 'ignore'] });
-      return true;
+      return { command: (url) => `open "${url}"` };
     }
 
     if (platform === 'win32') {
-      return true;
+      return { command: (url) => `start "" "${url}"` };
     }
 
     execSync('command -v xdg-open', { stdio: ['ignore', 'ignore', 'ignore'] });
-    return true;
+    return { command: (url) => `xdg-open "${url}"` };
   } catch {
-    return false;
+    if (platform === 'linux') {
+      try {
+        execSync('command -v wslview', { stdio: ['ignore', 'ignore', 'ignore'] });
+        return { command: (url) => `wslview "${url}"` };
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   }
+}
+
+async function runCommand(command: string, timeoutMs: number): Promise<{ ok: boolean; reason?: string }> {
+  return await new Promise((resolve) => {
+    const child = exec(command, (error) => {
+      if (error) {
+        resolve({ ok: false, reason: error.message });
+        return;
+      }
+      resolve({ ok: true });
+    });
+
+    const timeout = setTimeout(() => {
+      child.kill('SIGTERM');
+      resolve({ ok: false, reason: `timeout after ${timeoutMs}ms` });
+    }, timeoutMs);
+
+    child.on('exit', () => {
+      clearTimeout(timeout);
+    });
+  });
 }
 
 class OAuthRefreshError extends Error {
