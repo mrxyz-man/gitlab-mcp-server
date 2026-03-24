@@ -1,11 +1,11 @@
 # TASK-308: Regression Test Suite for Modular API + Seamless OAuth
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `test`
 - Area: `qa`
 - Priority: `critical`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `tester, developer`
 
 ## Objective
@@ -32,12 +32,15 @@
 2. `Реализовать тесты и стабилизировать их выполнение.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Добавлен regression suite для модульных GitLab clients (projects/issues/labels/members).`
+- `2026-03-25` — `Добавлены тесты seamless OAuth manager сценариев (started/in_progress + waiting_other_process).`
+- `2026-03-25` — `Полный прогон проверок: 9 test suites / 22 tests, typecheck успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Регрессионное покрытие расширено для modular API и ключевых seamless OAuth путей без flaky поведения.`
 - Follow-ups: `TASK-309`
