@@ -89,7 +89,7 @@
 
 ## Этап 6. Модульный GitLab API + Seamless OAuth (Критический приоритет)
 
-- [ ] Спроектировать модульную архитектуру GitLab API и новый OAuth-flow без ручного retry.
+- [x] Спроектировать модульную архитектуру GitLab API и новый OAuth-flow без ручного retry.
 - [ ] Разделить domain ports по модулям: issues/projects/labels/members.
 - [ ] Реализовать модульные инфраструктурные клиенты и общий base слой.
 - [ ] Мигрировать use-cases/MCP handlers на новую модульную структуру.

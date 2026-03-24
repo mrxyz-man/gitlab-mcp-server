@@ -1,11 +1,11 @@
 # TASK-301: Architecture Design for Modular GitLab API + Seamless OAuth
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `architecture`
 - Area: `architecture`
 - Priority: `critical`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `manager, architect, developer`
 
 ## Objective
@@ -33,11 +33,13 @@
 
 ## Validation
 - [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] edge-cases checked
 
 ## Execution Log
-- `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Задача переведена в active/in_progress.`
+- `2026-03-25` — `Подготовлен архитектурный документ: .ai/context/architecture/modular-gitlab-api-seamless-oauth-v1.md.`
+- `2026-03-25` — `Согласован порядок миграции TASK-302..TASK-309 и quality gates.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Готов дизайн модулей портов/клиентов, протокол seamless OAuth (bounded wait + retry-after-auth), план миграции и quality gates.`
 - Follow-ups: `TASK-302..TASK-304`
