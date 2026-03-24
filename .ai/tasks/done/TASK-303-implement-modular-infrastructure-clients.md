@@ -1,11 +1,11 @@
 # TASK-303: Implement Modular GitLab Infrastructure Clients
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `refactor`
 - Area: `backend`
 - Priority: `high`
-- Owner: `unassigned`
+- Owner: `codex`
 - Related roles: `developer, tester`
 
 ## Objective
@@ -33,11 +33,16 @@
 
 ## Validation
 - [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Добавлен общий base client: src/infrastructure/gitlab/base/gitlab-base-client.ts.`
+- `2026-03-25` — `Добавлены shared mappers: src/infrastructure/gitlab/base/gitlab-mappers.ts.`
+- `2026-03-25` — `Добавлены модульные клиенты: projects/issues/labels/members в src/infrastructure/gitlab/clients/.`
+- `2026-03-25` — `GitLabApiClient переписан как facade, делегирующий в модульные клиенты.`
+- `2026-03-25` — `Прогнан typecheck: успешно.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Инфраструктурный GitLab API разделен на модульные клиенты с общим базовым request-слоем и централизованными мапперами.`
 - Follow-ups: `TASK-304`
