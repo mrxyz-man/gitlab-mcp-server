@@ -5,6 +5,10 @@ MCP server for GitLab integration (TypeScript + Node.js).
 Полный пользовательский сценарий подключения к ИИ-агенту:
 - `docs/USER_GUIDE.md`
 
+Внутренний workflow разработки агента:
+- `AGENTS.md`
+- `.ai/START_HERE.md`
+
 Основной сценарий: модель `multi-instance`.
 - Один MCP-блок в `~/.codex/config.toml` на один GitLab instance.
 - Для `gitlab.com` и каждого self-hosted GitLab добавляется отдельный блок.

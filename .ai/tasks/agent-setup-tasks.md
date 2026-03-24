@@ -7,7 +7,8 @@
 
 ## Этап 1. База (текущий)
 
-- [x] Создать структуру `docs/` для правил и задач.
+- [x] Создать структуру документации для правил и задач агента.
+- [x] Подтянуть и адаптировать операционную `.ai`-систему из внешнего проекта под текущий репозиторий.
 - [x] Описать роли: Developer, Tester, Architect.
 - [x] Определить общие правила разработки (best practices + Clean Code).
 - [x] Определить правила архитектора по Clean Architecture.
@@ -33,10 +34,10 @@
 - [ ] Определить базовую стратегию логирования и обработки ошибок.
 - [x] Ввести конфиг-политику для управления issue workflow (`enabled`, `allow_*`, `allowed_labels`).
 
-Принятое решение по стеку: `docs/agent/stack-decision.md`.
-Принятая модульная структура: `docs/architecture/module-structure.md`.
-Контракт issue tools v0: `docs/architecture/issue-tools-v0.md`.
-Стратегия аутентификации: `docs/architecture/auth-strategy.md`.
+Принятое решение по стеку: `.ai/agent/stack-decision.md`.
+Принятая модульная структура: `.ai/architecture/module-structure.md`.
+Контракт issue tools v0: `.ai/architecture/issue-tools-v0.md`.
+Стратегия аутентификации: `.ai/architecture/auth-strategy.md`.
 
 ## Этап 3. Качество и CI
 
