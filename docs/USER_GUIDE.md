@@ -129,6 +129,8 @@ npx -y gitlab-mcp-agent-server
 3. Для headless окружений ставь `GITLAB_OAUTH_OPEN_BROWSER=false`.
 4. При медленном интерактивном flow увеличь окно ожидания callback:
    - `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS=180000` (или выше).
+5. Для seamless режима настрой inline wait:
+   - `GITLAB_OAUTH_INLINE_WAIT_MS=60000` (по умолчанию 60с, `0` отключает ожидание).
 
 ## 7. Сценарий пользовательского запроса
 
@@ -169,6 +171,10 @@ npx -y gitlab-mcp-agent-server
 2. Вызвать `gitlab_oauth_status` с polling (например, каждые 2 секунды) до `status: "authorized"` или timeout.
 3. Вызвать `gitlab_resume_request` с `request_id = auth.request_id`.
 4. Вернуть пользователю результат `gitlab_resume_request.data.result` как результат исходной операции.
+
+Примечание:
+- Если `GITLAB_OAUTH_INLINE_WAIT_MS > 0`, сервер сначала пытается дождаться OAuth и автоматически завершить текущий tool-вызов.
+- `AUTH_REQUIRED` возвращается как fallback, если inline wait не уложился в окно ожидания.
 
 Минимальные MCP tools для этой автоматизации:
 1. `gitlab_oauth_start` (опционально: принудительно запустить flow)

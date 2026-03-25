@@ -14,6 +14,7 @@ const EnvSchema = z.object({
   GITLAB_OAUTH_SCOPES: z.string().default('api'),
   GITLAB_OAUTH_TOKEN_STORE_PATH: z.string().optional(),
   GITLAB_OAUTH_CALLBACK_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+  GITLAB_OAUTH_INLINE_WAIT_MS: z.coerce.number().int().min(0).optional(),
   GITLAB_OAUTH_AUTO_LOGIN: z
     .enum(['true', 'false'])
     .optional()
@@ -63,6 +64,7 @@ export type AppConfig = {
       scopes: string[];
       tokenStorePath: string;
       callbackTimeoutMs: number;
+      inlineWaitMs: number;
       autoLogin: boolean;
       openBrowser: boolean;
     };
@@ -100,6 +102,7 @@ export function loadConfig(): AppConfig {
         scopes: splitCsv(env.GITLAB_OAUTH_SCOPES),
         tokenStorePath: defaultTokenStorePath,
         callbackTimeoutMs: env.GITLAB_OAUTH_CALLBACK_TIMEOUT_MS ?? 180_000,
+        inlineWaitMs: env.GITLAB_OAUTH_INLINE_WAIT_MS ?? 60_000,
         autoLogin: env.GITLAB_OAUTH_AUTO_LOGIN,
         openBrowser: env.GITLAB_OAUTH_OPEN_BROWSER
       },

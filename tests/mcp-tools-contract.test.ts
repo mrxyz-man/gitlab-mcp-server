@@ -70,6 +70,11 @@ describe('MCP tools contract', () => {
 function createDeps(withOAuth: boolean) {
   return {
     config: {
+      gitlab: {
+        oauth: {
+          inlineWaitMs: 0
+        }
+      },
       issueWorkflow: {
         allowedLabels: [],
         autoRemovePreviousStateLabels: true

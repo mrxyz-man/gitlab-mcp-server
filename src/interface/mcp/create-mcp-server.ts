@@ -30,6 +30,7 @@ export function createMcpServer(): McpServer {
           bootstrapAccessToken: config.gitlab.accessToken,
           tokenStorePath: config.gitlab.oauth.tokenStorePath,
           callbackTimeoutMs: config.gitlab.oauth.callbackTimeoutMs,
+          inlineWaitMs: config.gitlab.oauth.inlineWaitMs,
           autoLogin: config.gitlab.oauth.autoLogin,
           openBrowser: config.gitlab.oauth.openBrowser
         })

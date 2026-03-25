@@ -16,6 +16,7 @@ type GitLabOAuthManagerOptions = {
   bootstrapAccessToken?: string;
   tokenStorePath: string;
   callbackTimeoutMs?: number;
+  inlineWaitMs?: number;
   autoLogin: boolean;
   openBrowser: boolean;
 };
@@ -277,6 +278,26 @@ export class GitLabOAuthManager implements TokenProvider {
       message: 'OAuth token is missing. Start authorization flow.',
       localEntryUrl: resolveLocalEntryUrl(this.options.redirectUri)
     };
+  }
+
+  async waitForAuthorization(maxWaitMs = this.options.inlineWaitMs ?? 60_000): Promise<boolean> {
+    if (maxWaitMs <= 0) {
+      return false;
+    }
+
+    const pollMs = 1000;
+    let elapsed = 0;
+    while (elapsed < maxWaitMs) {
+      const status = this.getAuthorizationStatus();
+      if (status.status === 'authorized') {
+        return true;
+      }
+
+      await sleep(pollMs);
+      elapsed += pollMs;
+    }
+
+    return false;
   }
 
   private async loginInteractivelyWithLock(): Promise<StoredOAuthToken> {

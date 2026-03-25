@@ -39,6 +39,7 @@ export function registerTools(
     execute: () => Promise<T> | T,
     options?: {
       requestId?: string;
+      bypassInlineAuthWait?: boolean;
     }
   ) => {
     try {
@@ -46,6 +47,16 @@ export function registerTools(
       return asJsonResult({ ok: true, data });
     } catch (error) {
       if (error instanceof OAuthAuthorizationRequiredError) {
+        if (!options?.bypassInlineAuthWait && deps.oauthManager && deps.config.gitlab.oauth.inlineWaitMs > 0) {
+          const ready = await deps.oauthManager.waitForAuthorization(deps.config.gitlab.oauth.inlineWaitMs);
+          if (ready) {
+            return runTool(execute, {
+              requestId: options?.requestId,
+              bypassInlineAuthWait: true
+            });
+          }
+        }
+
         const requestId = options?.requestId ?? pendingRequests.register(execute);
         return asJsonResult({
           ok: false,
