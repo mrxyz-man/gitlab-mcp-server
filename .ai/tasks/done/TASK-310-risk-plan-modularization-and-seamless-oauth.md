@@ -1,7 +1,7 @@
 # TASK-310: Risk Plan for Modularization and Seamless OAuth
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `research`
 - Area: `architecture`
 - Priority: `high`
@@ -37,12 +37,14 @@
 2. `Проверить выполнение gates перед закрытием эпика.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Сформирован риск-план release-gate: .ai/context/architecture/modular-gitlab-api-seamless-oauth-risk-plan-v1.md.`
+- `2026-03-25` — `Связаны риски, сигналы, mitigation и owners с TASK-301..309.`
 
 ## Final Notes
-- Result: `TBD`
-- Follow-ups: `TASK-300 execution`
+- Result: `Completed`
+- Follow-ups: `Применять как release-gate перед merge/publish`

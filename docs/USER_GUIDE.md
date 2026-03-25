@@ -103,8 +103,10 @@ npx -y gitlab-mcp-agent-server
 3. Если `GITLAB_OAUTH_OPEN_BROWSER=true` и окружение GUI доступно, браузер откроется автоматически.
 4. Локальный URL `http://127.0.0.1:8787/` автоматически редиректит на GitLab OAuth.
 5. Если браузер не может быть открыт, сервер печатает URL авторизации в лог.
-6. При первом вызове GitLab tool сервер вернет в ответе явную инструкцию с URL для OAuth.
-   После завершения авторизации повтори тот же tool-вызов.
+6. При первом вызове GitLab tool сервер запускает OAuth и в рамках текущего запроса
+   ждет завершения авторизации (bounded wait).
+   Если авторизация завершена вовремя, исходный tool-вызов продолжается автоматически
+   без ручного повторного запроса.
 7. После подтверждения в GitLab и callback на `http://127.0.0.1:8787/oauth/callback` токены сохраняются в token store для конкретного instance.
 8. В браузере показывается feedback-страница:
    - `Success`: токен сохранен, можно вернуться в ИИ-агент;
@@ -140,8 +142,9 @@ npx -y gitlab-mcp-agent-server
    - `git remote origin` текущего `cwd`,
    - `GITLAB_DEFAULT_PROJECT`.
 5. Если токена для этого instance нет, запускается OAuth flow.
-6. После callback токен сохраняется в token store этого instance.
-7. Сервер возвращает список issues.
+6. Сервер ждет OAuth callback в пределах окна `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS`.
+7. После callback токен сохраняется в token store этого instance.
+8. Исходный запрос автоматически продолжается, и сервер возвращает список issues.
 
 ## 8. Быстрая проверка работоспособности
 
@@ -176,10 +179,11 @@ npx -y gitlab-mcp-agent-server
    - `<tokenStorePath>.oauth.lock`
 
 `gitlab_list_issues`/другой tool уходит в timeout после удаления token:
-1. Проверь stale lock и удали его:
+1. Заверши OAuth в браузере в пределах `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS`.
+2. Проверь stale lock и удали его при необходимости:
    - `rm -f ~/.config/gitlab-mcp/<gitlab-host>/token.json.oauth.lock`
-2. Повтори запрос и заверши OAuth в браузере в течение окна авторизации.
-3. Или сначала вызови `gitlab_oauth_start` и открой `localEntryUrl` из ответа.
+3. Если auto-open не сработал, используй URL из логов (`localEntryUrl` или direct authorize URL).
+4. При повторяющихся timeout увеличь `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS`.
 
 ## 10. Advanced (необязательно)
 

@@ -3,8 +3,8 @@
 ## Status
 - Date: `2026-03-25`
 - Related epic: `TASK-300`
-- Related task: `TASK-301`
-- Scope: архитектурный дизайн и план миграции (без breaking changes для существующих MCP tools)
+- Related tasks: `TASK-301..TASK-309`
+- Scope: архитектурный дизайн, план миграции и итоговое состояние реализации (без breaking changes для существующих MCP tools)
 
 ## Goals
 1. Разделить GitLab API слой на модули по ответственности (`issues`, `projects`, `labels`, `members`).
@@ -19,7 +19,7 @@
 ## Current Pain Points
 1. `GitLabApiClient` монолитный и объединяет разные ответственности.
 2. `GitLabApiPort` перегружен разнородными методами.
-3. OAuth при отсутствии токена завершает текущий вызов ошибкой и требует повторного запроса.
+3. До внедрения TASK-305 OAuth при отсутствии токена завершал текущий вызов ошибкой и требовал повторного запроса.
 4. Сложно изолированно тестировать модули и эволюционировать API.
 
 ## Target Architecture
@@ -70,7 +70,7 @@ Rules:
 ## Seamless OAuth Protocol (Token Missing)
 
 ### Problem
-Сейчас `getAccessToken()` выбрасывает ошибку с требованием ручного повтора запроса.
+До внедрения seamless flow `getAccessToken()` выбрасывал ошибку с требованием ручного повтора запроса.
 
 ### Target behavior
 1. Request path вызывает `tokenProvider.getAccessToken(...)`.
@@ -136,7 +136,10 @@ Mapping к MCP response:
 4. Multi-instance behavior verified.
 5. Docs aligned with actual runtime behavior.
 
-## Open Decisions (to confirm in TASK-305/307)
-1. Точный default wait budget (60с vs 120с).
-2. Нужен ли keep-alive/progress ping для MCP-клиентов при долгом ожидании.
-3. Нужна ли отмена ожидания по AbortSignal на уровне request path.
+## Implementation Status (after TASK-309)
+1. Domain ports разделены по модулям (`issues/projects/labels/members`).
+2. Infrastructure разбита на `base` + модульные клиенты + фасад.
+3. Seamless OAuth реализован: текущий tool-вызов ждет callback в bounded window и продолжается автоматически.
+4. Auto-open браузера реализован с fallback и диагностикой причин.
+5. OAuth lock lifecycle усилен: owner-safe release, heartbeat, stale recovery.
+6. Добавлены регрессионные тесты по модульному API и OAuth orchestration.

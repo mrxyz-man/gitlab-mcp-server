@@ -1,7 +1,7 @@
 # TASK-309: Documentation Update for Modular API and Seamless OAuth
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `docs`
 - Area: `product/context`
 - Priority: `medium`
@@ -32,12 +32,14 @@
 2. `Обновить user/developer docs и сверить примеры.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-25` — `Обновлен docs/USER_GUIDE.md: seamless OAuth без ручного retry, bounded wait, troubleshooting fallback/timeout.`
+- `2026-03-25` — `Синхронизирован .ai/context/architecture/modular-gitlab-api-seamless-oauth-v1.md с фактической реализацией TASK-301..309.`
 
 ## Final Notes
-- Result: `TBD`
-- Follow-ups: `Release notes`
+- Result: `Completed`
+- Follow-ups: `TASK-310 risk plan перед merge`
