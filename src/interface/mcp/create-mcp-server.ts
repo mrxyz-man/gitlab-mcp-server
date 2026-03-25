@@ -14,6 +14,7 @@ import { GitLabOAuthManager } from '../../infrastructure/auth/gitlab-oauth-manag
 import { StaticTokenProvider } from '../../infrastructure/auth/token-provider';
 import { GitLabApiClient } from '../../infrastructure/gitlab/gitlab-api-client';
 import { loadConfig } from '../../shared/config';
+import { resolveRuntimeVersion } from '../../shared/runtime-version';
 import { registerTools } from './register-tools';
 
 export function createMcpServer(): McpServer {
@@ -42,7 +43,7 @@ export function createMcpServer(): McpServer {
 
   const server = new McpServer({
     name: 'gitlab-mcp-server',
-    version: '0.1.0'
+    version: resolveRuntimeVersion(__dirname)
   });
 
   const projectResolver = new ProjectResolver(config);
