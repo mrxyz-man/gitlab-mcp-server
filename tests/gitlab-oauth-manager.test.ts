@@ -1,4 +1,5 @@
 import { GitLabOAuthManager } from '../src/infrastructure/auth/gitlab-oauth-manager';
+import { OAuthAuthorizationRequiredError } from '../src/shared/errors';
 
 describe('GitLabOAuthManager seamless oauth', () => {
   function createManager(): GitLabOAuthManager {
@@ -15,24 +16,15 @@ describe('GitLabOAuthManager seamless oauth', () => {
     });
   }
 
-  test('waits pending oauth session and returns token', async () => {
+  test('returns auth-required error with links when oauth flow is started', async () => {
     const manager = createManager();
     const m = manager as unknown as {
       tokenStore: { read: jest.Mock };
       startOAuthAuthorization: jest.Mock;
-      pendingOauth: { promise: Promise<void> };
     };
 
     m.tokenStore = {
-      read: jest
-        .fn()
-        .mockReturnValueOnce(undefined)
-        .mockReturnValueOnce({
-          accessToken: 'new-token',
-          refreshToken: 'r',
-          expiresAt: Date.now() + 120_000,
-          tokenType: 'bearer'
-        })
+      read: jest.fn().mockReturnValue(undefined)
     } as never;
 
     m.startOAuthAuthorization = jest.fn().mockResolvedValue({
@@ -42,19 +34,14 @@ describe('GitLabOAuthManager seamless oauth', () => {
       authorizeUrl: 'https://gitlab.com/oauth/authorize'
     });
 
-    m.pendingOauth = {
-      promise: Promise.resolve()
-    } as never;
-
-    await expect(manager.getAccessToken()).resolves.toBe('new-token');
+    await expect(manager.getAccessToken()).rejects.toBeInstanceOf(OAuthAuthorizationRequiredError);
   });
 
-  test('waits other process and returns token', async () => {
+  test('returns auth-required error when oauth flow is running in another process', async () => {
     const manager = createManager();
     const m = manager as unknown as {
       tokenStore: { read: jest.Mock };
       startOAuthAuthorization: jest.Mock;
-      waitForTokenFromOtherProcess: jest.Mock;
     };
 
     m.tokenStore = {
@@ -67,13 +54,6 @@ describe('GitLabOAuthManager seamless oauth', () => {
       lockFilePath: '/tmp/lock'
     });
 
-    m.waitForTokenFromOtherProcess = jest.fn().mockResolvedValue({
-      accessToken: 'other-token',
-      refreshToken: 'r',
-      expiresAt: Date.now() + 60_000,
-      tokenType: 'bearer'
-    });
-
-    await expect(manager.getAccessToken()).resolves.toBe('other-token');
+    await expect(manager.getAccessToken()).rejects.toBeInstanceOf(OAuthAuthorizationRequiredError);
   });
 });

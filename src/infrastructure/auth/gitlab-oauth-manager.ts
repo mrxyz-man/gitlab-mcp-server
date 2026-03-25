@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { closeSync, existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 
-import { ConfigurationError } from '../../shared/errors';
+import { ConfigurationError, OAuthAuthorizationRequiredError } from '../../shared/errors';
 import { OAuthTokenStore, type StoredOAuthToken } from './oauth-token-store';
 import type { TokenProvider } from './token-provider';
 
@@ -44,6 +44,29 @@ type OAuthStartResult =
       status: 'waiting_other_process';
       message: string;
       lockFilePath: string;
+    };
+
+export type OAuthAuthorizationStatus =
+  | {
+      status: 'authorized';
+      message: string;
+    }
+  | {
+      status: 'in_progress';
+      message: string;
+      localEntryUrl: string;
+      authorizeUrl: string;
+    }
+  | {
+      status: 'waiting_other_process';
+      message: string;
+      lockFilePath: string;
+      localEntryUrl?: string;
+    }
+  | {
+      status: 'authorization_required';
+      message: string;
+      localEntryUrl?: string;
     };
 
 type OauthLockPayload = {
@@ -124,16 +147,26 @@ export class GitLabOAuthManager implements TokenProvider {
     }
 
     if (start.status === 'started' || start.status === 'in_progress') {
-      console.error('OAuth authorization started. Waiting for completion...');
+      console.error('OAuth authorization started.');
       console.error(`Open: ${start.localEntryUrl}`);
       console.error(`Direct GitLab URL: ${start.authorizeUrl}`);
-      const token = await this.waitForPendingOAuthSession();
-      return token.accessToken;
+      throw new OAuthAuthorizationRequiredError(
+        {
+          localEntryUrl: start.localEntryUrl,
+          authorizeUrl: start.authorizeUrl
+        },
+        'OAuth authorization is required. Complete it in browser, then resume the pending request.'
+      );
     }
 
     if (start.status === 'waiting_other_process') {
-      const token = await this.waitForTokenFromOtherProcess(start.lockFilePath);
-      return token.accessToken;
+      throw new OAuthAuthorizationRequiredError(
+        {
+          lockFilePath: start.lockFilePath,
+          localEntryUrl: resolveLocalEntryUrl(this.options.redirectUri)
+        },
+        'OAuth flow is running in another process for this instance. Complete it, then resume the pending request.'
+      );
     }
 
     throw new ConfigurationError(start.message);
@@ -208,6 +241,41 @@ export class GitLabOAuthManager implements TokenProvider {
       message: 'Open the provided URL and complete OAuth authorization.',
       localEntryUrl: links.localEntryUrl,
       authorizeUrl: links.authorizeUrl
+    };
+  }
+
+  getAuthorizationStatus(): OAuthAuthorizationStatus {
+    const stored = this.tokenStore.read();
+    if (stored && !isExpiringSoon(stored.expiresAt)) {
+      return {
+        status: 'authorized',
+        message: 'OAuth token exists and is valid.'
+      };
+    }
+
+    if (this.pendingOauth) {
+      return {
+        status: 'in_progress',
+        message: 'OAuth authorization is in progress.',
+        localEntryUrl: this.pendingOauth.localEntryUrl,
+        authorizeUrl: this.pendingOauth.authorizeUrl
+      };
+    }
+
+    const lockFilePath = `${this.options.tokenStorePath}.oauth.lock`;
+    if (existsSync(lockFilePath)) {
+      return {
+        status: 'waiting_other_process',
+        message: 'OAuth flow is running in another process for this instance.',
+        lockFilePath,
+        localEntryUrl: resolveLocalEntryUrl(this.options.redirectUri)
+      };
+    }
+
+    return {
+      status: 'authorization_required',
+      message: 'OAuth token is missing. Start authorization flow.',
+      localEntryUrl: resolveLocalEntryUrl(this.options.redirectUri)
     };
   }
 
@@ -546,19 +614,26 @@ function toFormUrlEncoded(data: Record<string, string | undefined>): string {
 }
 
 async function openInBrowser(url: string): Promise<{ opened: boolean; reason?: string }> {
-  const platform = process.platform;
-  const launcher = detectBrowserLauncher(platform);
-  if (!launcher) {
-    return { opened: false, reason: 'no supported browser opener command found' };
-  }
+  try {
+    const module = (await import('open')) as { default: (target: string, opts?: { wait?: boolean }) => Promise<unknown> };
+    await module.default(url, { wait: false });
+    return { opened: true };
+  } catch (error) {
+    const packageError = error instanceof Error ? error.message : String(error);
+    const platform = process.platform;
+    const launcher = detectBrowserLauncher(platform);
+    if (!launcher) {
+      return { opened: false, reason: `open package failed (${packageError}); no supported browser opener command found` };
+    }
 
-  const command = launcher.command(url);
-  const result = await runCommand(command, 3_000);
-  if (!result.ok) {
-    return { opened: false, reason: `${command} failed (${result.reason})` };
-  }
+    const command = launcher.command(url);
+    const result = await runCommand(command, 3_000);
+    if (!result.ok) {
+      return { opened: false, reason: `open package failed (${packageError}); ${command} failed (${result.reason})` };
+    }
 
-  return { opened: true };
+    return { opened: true };
+  }
 }
 
 function resolvePort(url: URL): number {
@@ -567,6 +642,19 @@ function resolvePort(url: URL): number {
   }
 
   return url.protocol === 'https:' ? 443 : 80;
+}
+
+function resolveLocalEntryUrl(redirectUri?: string): string | undefined {
+  if (!redirectUri) {
+    return undefined;
+  }
+
+  try {
+    const redirect = new URL(redirectUri);
+    return `${redirect.protocol}//${redirect.host}/`;
+  } catch {
+    return undefined;
+  }
 }
 
 function detectBrowserLauncher(platform: NodeJS.Platform): { command: (url: string) => string } | null {

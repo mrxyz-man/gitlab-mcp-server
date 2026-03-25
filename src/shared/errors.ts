@@ -42,3 +42,19 @@ export class ExternalServiceError extends Error {
     }
   }
 }
+
+export type OAuthAuthRequiredMeta = {
+  localEntryUrl?: string;
+  authorizeUrl?: string;
+  lockFilePath?: string;
+};
+
+export class OAuthAuthorizationRequiredError extends Error {
+  constructor(
+    readonly meta: OAuthAuthRequiredMeta,
+    message = 'OAuth authorization is required to continue the request.'
+  ) {
+    super(message);
+    this.name = 'OAuthAuthorizationRequiredError';
+  }
+}

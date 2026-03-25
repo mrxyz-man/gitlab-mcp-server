@@ -13,6 +13,8 @@ describe('MCP tools contract', () => {
 
     expect(names).toEqual([
       'gitlab_oauth_start',
+      'gitlab_oauth_status',
+      'gitlab_resume_request',
       'health_check',
       'gitlab_create_issue',
       'gitlab_get_issue',
@@ -73,7 +75,12 @@ function createDeps(withOAuth: boolean) {
         autoRemovePreviousStateLabels: true
       }
     },
-    oauthManager: withOAuth ? ({ startOAuthAuthorization: jest.fn() } as never) : undefined,
+    oauthManager: withOAuth
+      ? ({
+          startOAuthAuthorization: jest.fn(),
+          getAuthorizationStatus: jest.fn()
+        } as never)
+      : undefined,
     projectResolver: { resolveProject: jest.fn() } as never,
     issueWorkflowPolicy: {
       assertEnabled: jest.fn(),

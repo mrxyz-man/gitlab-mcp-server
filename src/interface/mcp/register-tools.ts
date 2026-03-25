@@ -8,12 +8,13 @@ import type { CreateIssueUseCase } from '../../application/use-cases/create-issu
 import type { EnsureLabelsUseCase } from '../../application/use-cases/ensure-labels';
 import type { GetIssueUseCase } from '../../application/use-cases/get-issue';
 import type { HealthCheckUseCase } from '../../application/use-cases/health-check';
-import type { ListLabelsUseCase } from '../../application/use-cases/list-labels';
 import type { ListIssuesUseCase } from '../../application/use-cases/list-issues';
+import type { ListLabelsUseCase } from '../../application/use-cases/list-labels';
 import type { UpdateIssueLabelsUseCase } from '../../application/use-cases/update-issue-labels';
 import type { GitLabOAuthManager } from '../../infrastructure/auth/gitlab-oauth-manager';
 import type { AppConfig } from '../../shared/config';
-import { PolicyError } from '../../shared/errors';
+import { OAuthAuthorizationRequiredError, PolicyError } from '../../shared/errors';
+import { PendingRequestStore } from './pending-request-store';
 
 export function registerTools(
   server: McpServer,
@@ -32,6 +33,47 @@ export function registerTools(
     ensureLabelsUseCase: EnsureLabelsUseCase;
   }
 ): void {
+  const pendingRequests = new PendingRequestStore();
+
+  const runTool = async <T>(
+    execute: () => Promise<T> | T,
+    options?: {
+      requestId?: string;
+    }
+  ) => {
+    try {
+      const data = await execute();
+      return asJsonResult({ ok: true, data });
+    } catch (error) {
+      if (error instanceof OAuthAuthorizationRequiredError) {
+        const requestId = options?.requestId ?? pendingRequests.register(execute);
+        return asJsonResult({
+          ok: false,
+          error_code: 'AUTH_REQUIRED',
+          error: error.message,
+          auth: {
+            request_id: requestId,
+            ...error.meta
+          },
+          next_actions: [
+            'Open auth.localEntryUrl (or auth.authorizeUrl) and complete GitLab OAuth.',
+            'Poll gitlab_oauth_status until status=authorized.',
+            'Call gitlab_resume_request with auth.request_id to continue original operation.'
+          ]
+        });
+      }
+
+      const message =
+        error instanceof PolicyError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Unexpected tool error';
+
+      return asJsonResult({ ok: false, error: message });
+    }
+  };
+
   if (deps.oauthManager) {
     server.registerTool(
       'gitlab_oauth_start',
@@ -46,6 +88,44 @@ export function registerTools(
           const result = await deps.oauthManager?.startOAuthAuthorization();
           return result ?? { status: 'unsupported', message: 'OAuth mode is not enabled.' };
         });
+      }
+    );
+
+    server.registerTool(
+      'gitlab_oauth_status',
+      {
+        title: 'GitLab OAuth Status',
+        description: 'Returns current OAuth authorization status for this instance.',
+        inputSchema: {}
+      },
+      async () => {
+        return runTool(async () => {
+          return deps.oauthManager?.getAuthorizationStatus() ?? { status: 'unsupported' };
+        });
+      }
+    );
+
+    server.registerTool(
+      'gitlab_resume_request',
+      {
+        title: 'GitLab Resume Request',
+        description: 'Resumes a previously deferred request after OAuth authorization.',
+        inputSchema: {
+          request_id: z.string().uuid()
+        }
+      },
+      async ({ request_id }) => {
+        return runTool(
+          async () => {
+            const result = await pendingRequests.resume(request_id);
+            return {
+              request_id,
+              resumed: true,
+              result
+            };
+          },
+          { requestId: request_id }
+        );
       }
     );
   }
@@ -271,22 +351,6 @@ export function registerTools(
       });
     }
   );
-}
-
-async function runTool<T>(execute: () => Promise<T> | T) {
-  try {
-    const data = await execute();
-    return asJsonResult({ ok: true, data });
-  } catch (error) {
-    const message =
-      error instanceof PolicyError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : 'Unexpected tool error';
-
-    return asJsonResult({ ok: false, error: message });
-  }
 }
 
 function asJsonResult(payload: unknown) {

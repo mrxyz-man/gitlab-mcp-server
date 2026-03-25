@@ -155,7 +155,27 @@ npx -y gitlab-mcp-agent-server
 4. Обнови labels: `gitlab_update_issue_labels`.
 5. Закрой issue: `gitlab_close_issue`.
 
-## 9. Troubleshooting
+## 9. Agent Automation Contract (OAuth)
+
+Этот контракт нужен для ИИ-агента, чтобы пользователь не повторял исходный запрос вручную.
+
+Когда любой GitLab tool возвращает:
+- `ok: false`
+- `error_code: "AUTH_REQUIRED"`
+- `auth.request_id`
+
+агент должен сделать:
+1. Открыть `auth.localEntryUrl` (или `auth.authorizeUrl`) и попросить пользователя завершить OAuth.
+2. Вызвать `gitlab_oauth_status` с polling (например, каждые 2 секунды) до `status: "authorized"` или timeout.
+3. Вызвать `gitlab_resume_request` с `request_id = auth.request_id`.
+4. Вернуть пользователю результат `gitlab_resume_request.data.result` как результат исходной операции.
+
+Минимальные MCP tools для этой автоматизации:
+1. `gitlab_oauth_start` (опционально: принудительно запустить flow)
+2. `gitlab_oauth_status`
+3. `gitlab_resume_request`
+
+## 10. Troubleshooting
 
 `The redirect URI included is not valid`:
 1. Проверь, что URI совпадает 1-в-1:
@@ -185,7 +205,7 @@ npx -y gitlab-mcp-agent-server
 3. Если auto-open не сработал, используй URL из логов (`localEntryUrl` или direct authorize URL).
 4. При повторяющихся timeout увеличь `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS`.
 
-## 10. Advanced (необязательно)
+## 11. Advanced (необязательно)
 
 Если нужен тонкий контроль, можно использовать:
 1. `GITLAB_DEFAULT_PROJECT` для явного fallback проекта.
