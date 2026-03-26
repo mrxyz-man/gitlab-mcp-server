@@ -1,7 +1,7 @@
 # TASK-208: Risk Mitigation Plan for Full Issue Management
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `research`
 - Area: `architecture`
 - Priority: `high`
@@ -109,13 +109,34 @@
 1. `Подтвердить risk-matrix с владельцем продукта/разработки.`
 2. `Добавить mitigation-checkpoints в execution каждого микротаска.`
 
+## Quality Gates (Applied)
+1. `Contract Gate`: v1 tool contract зафиксирован в `.ai/context/architecture/issue-tools-v0.md` (additive-only, совместимость с v0).
+2. `Validation Gate`: для новых tool-операций добавлены позитивные и негативные кейсы (см. `tests/*issue*`).
+3. `Stability Gate`: обязательный прогон `lint + typecheck + test` перед переводом задач в `done`.
+4. `Docs Gate`: пользовательские сценарии и troubleshooting синхронизированы в `docs/USER_GUIDE.md`.
+5. `Config Gate`: workflow-переходы вынесены в конфиг (`ISSUE_WORKFLOW_STATE_LABEL_MAP_JSON`) с явной валидацией входов в use-case.
+
+## Escalation Triggers
+1. `Более 2 подряд фейлов` одного и того же tool в smoke-проверке.
+2. `AUTH_REQUIRED loop` или таймауты OAuth в e2e-сценарии после внедрения изменений issue-блока.
+3. `Регрессия backward compatibility` (изменение поведения существующих v0 tools).
+4. `Рост flaky тестов` в issue-наборе выше 5% повторных прогонов.
+
+## Operational Mitigation Playbook
+1. `Freeze изменений` в affected tool до локализации причины.
+2. `Собрать минимальный repro` (input payload + expected/actual response + error_code).
+3. `Включить безопасный fallback`: использовать базовые v0 operations (`get/list/update labels`) до восстановления специализированного tool.
+4. `Восстановить стабильность` через targeted fix + regression test.
+5. `Обновить документацию` и release notes по фактическому поведению.
+
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Сформирован risk mitigation plan для full issue management.`
+- `2026-03-26` — `План применен к реализации TASK-201..207: quality gates и эскалационные триггеры зафиксированы, проверки пройдены.`
 
 ## Final Notes
-- Result: `TBD`
-- Follow-ups: `TASK-200..TASK-207 execution`
+- Result: `Done`
+- Follow-ups: `Закрытие TASK-200 epic`

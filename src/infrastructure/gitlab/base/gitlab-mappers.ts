@@ -14,6 +14,7 @@ export type GitLabIssueApi = {
   description: string | null;
   state: 'opened' | 'closed';
   labels: string[];
+  assignees?: Array<{ id: number }>;
   web_url: string;
   updated_at: string;
   closed_at: string | null;
@@ -34,6 +35,7 @@ export function mapProject(project: GitLabProjectApi): GitLabProject {
 }
 
 export function mapIssue(issue: GitLabIssueApi): GitLabIssue {
+  const assigneeIds = issue.assignees?.map((assignee) => assignee.id);
   return {
     id: issue.id,
     iid: issue.iid,
@@ -42,6 +44,7 @@ export function mapIssue(issue: GitLabIssueApi): GitLabIssue {
     description: issue.description,
     state: issue.state,
     labels: issue.labels,
+    ...(assigneeIds && assigneeIds.length > 0 ? { assigneeIds } : {}),
     webUrl: issue.web_url,
     updatedAt: issue.updated_at,
     closedAt: issue.closed_at

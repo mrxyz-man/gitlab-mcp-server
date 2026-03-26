@@ -1,7 +1,7 @@
 # TASK-206: Full Issues Test Matrix
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `test`
 - Area: `qa`
 - Priority: `high`
@@ -32,12 +32,15 @@
 2. `Реализовать тесты и прогнать quality gates.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Зафиксирована матрица сценариев: .ai/context/testing/full-issues-test-matrix-v1.md`
+- `2026-03-26` — `Добавлены негативные кейсы по каждому публичному issue tool: tests/issue-tools-negative.test.ts`
+- `2026-03-26` — `Покрыты error-классы auth/network/timeout/rate-limit/validation/policy через существующие и новые тесты.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Completed`
 - Follow-ups: `TASK-207`

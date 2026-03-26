@@ -1,7 +1,7 @@
 # TASK-202: Implement Issue Update and State Tools
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `backend`
 - Priority: `high`
@@ -32,12 +32,14 @@
 2. `Подключить adapter + interface handlers + тесты.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Реализованы gitlab_update_issue и gitlab_reopen_issue во всех слоях (ports/use-cases/clients/MCP handlers).`
+- `2026-03-26` — `Добавлены тесты на success + validation + upstream error для update issue tool.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Completed`
 - Follow-ups: `TASK-206`

@@ -38,12 +38,16 @@ describe('GitLab modular clients', () => {
       state: 'opened',
       search: 'bug',
       labels: ['Todo'],
+      assigneeId: 42,
+      assigneeUsername: 'dev',
+      orderBy: 'updated_at',
+      sort: 'desc',
       perPage: 20,
       page: 2
     });
 
     expect(requestJson).toHaveBeenCalledWith(
-      '/projects/group%2Ftest/issues?state=opened&search=bug&labels=Todo&per_page=20&page=2',
+      '/projects/group%2Ftest/issues?state=opened&search=bug&labels=Todo&assignee_id=42&assignee_username=dev&order_by=updated_at&sort=desc&per_page=20&page=2',
       undefined,
       'group/test'
     );
@@ -78,5 +82,76 @@ describe('GitLab modular clients', () => {
     expect(result).toEqual([
       { id: 11, username: 'dev', name: 'Dev User', state: 'active', webUrl: 'https://gitlab/dev' }
     ]);
+  });
+
+  test('issues client updates issue fields', async () => {
+    const requestJson = jest.fn().mockResolvedValue({
+      id: 10,
+      iid: 7,
+      project_id: 1,
+      title: 'New title',
+      description: 'Updated',
+      state: 'opened',
+      labels: [],
+      web_url: 'https://gitlab/issue/7',
+      updated_at: '2026-01-01T00:00:00Z',
+      closed_at: null
+    });
+    const client = new GitLabIssuesClient({ requestJson } as never);
+
+    const result = await client.updateIssue({
+      project: 'group/test',
+      issueIid: 7,
+      title: 'New title',
+      description: 'Updated',
+      milestoneId: 11,
+      dueDate: '2026-12-30'
+    });
+
+    expect(requestJson).toHaveBeenCalledWith(
+      '/projects/group%2Ftest/issues/7',
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: 'New title',
+          description: 'Updated',
+          milestone_id: 11,
+          due_date: '2026-12-30'
+        })
+      },
+      'group/test'
+    );
+    expect(result.title).toBe('New title');
+  });
+
+  test('issues client reopens issue via state_event', async () => {
+    const requestJson = jest.fn().mockResolvedValue({
+      id: 10,
+      iid: 7,
+      project_id: 1,
+      title: 'Issue',
+      description: null,
+      state: 'opened',
+      labels: [],
+      web_url: 'https://gitlab/issue/7',
+      updated_at: '2026-01-01T00:00:00Z',
+      closed_at: null
+    });
+    const client = new GitLabIssuesClient({ requestJson } as never);
+
+    const result = await client.reopenIssue({
+      project: 'group/test',
+      issueIid: 7
+    });
+
+    expect(requestJson).toHaveBeenCalledWith(
+      '/projects/group%2Ftest/issues/7',
+      {
+        method: 'PUT',
+        body: JSON.stringify({ state_event: 'reopen' })
+      },
+      'group/test'
+    );
+    expect(result.state).toBe('opened');
   });
 });

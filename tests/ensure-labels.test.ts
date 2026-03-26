@@ -36,6 +36,12 @@ function makeApi() {
     async closeIssue() {
       throw new Error('Not used in test');
     },
+    async reopenIssue() {
+      throw new Error('Not used in test');
+    },
+    async updateIssue() {
+      throw new Error('Not used in test');
+    },
     async updateIssueLabels() {
       throw new Error('Not used in test');
     },

@@ -8,8 +8,14 @@ import type { CreateIssueUseCase } from '../../application/use-cases/create-issu
 import type { EnsureLabelsUseCase } from '../../application/use-cases/ensure-labels';
 import type { GetIssueUseCase } from '../../application/use-cases/get-issue';
 import type { HealthCheckUseCase } from '../../application/use-cases/health-check';
+import type { AssignIssueUseCase } from '../../application/use-cases/assign-issue';
+import type { ApplyIssueTransitionUseCase } from '../../application/use-cases/apply-issue-transition';
 import type { ListIssuesUseCase } from '../../application/use-cases/list-issues';
 import type { ListLabelsUseCase } from '../../application/use-cases/list-labels';
+import type { ListProjectMembersUseCase } from '../../application/use-cases/list-project-members';
+import type { ReopenIssueUseCase } from '../../application/use-cases/reopen-issue';
+import type { UnassignIssueUseCase } from '../../application/use-cases/unassign-issue';
+import type { UpdateIssueUseCase } from '../../application/use-cases/update-issue';
 import type { UpdateIssueLabelsUseCase } from '../../application/use-cases/update-issue-labels';
 import type { GitLabOAuthManager } from '../../infrastructure/auth/gitlab-oauth-manager';
 import type { AppConfig } from '../../shared/config';
@@ -26,9 +32,15 @@ export function registerTools(
     healthCheckUseCase: HealthCheckUseCase;
     createIssueUseCase: CreateIssueUseCase;
     getIssueUseCase: GetIssueUseCase;
+    updateIssueUseCase: UpdateIssueUseCase;
     closeIssueUseCase: CloseIssueUseCase;
+    reopenIssueUseCase: ReopenIssueUseCase;
+    assignIssueUseCase: AssignIssueUseCase;
+    applyIssueTransitionUseCase: ApplyIssueTransitionUseCase;
+    unassignIssueUseCase: UnassignIssueUseCase;
     updateIssueLabelsUseCase: UpdateIssueLabelsUseCase;
     listIssuesUseCase: ListIssuesUseCase;
+    listProjectMembersUseCase: ListProjectMembersUseCase;
     listLabelsUseCase: ListLabelsUseCase;
     ensureLabelsUseCase: EnsureLabelsUseCase;
   }
@@ -171,7 +183,6 @@ export function registerTools(
     async ({ project, title, description, labels, assignee_ids }) => {
       return runTool(async () => {
         deps.issueWorkflowPolicy.assertActionAllowed('create');
-        deps.issueWorkflowPolicy.assertLabelsAllowed(labels ?? []);
 
         const resolvedProject = deps.projectResolver.resolveProject(project);
         const issue = await deps.createIssueUseCase.execute({
@@ -212,6 +223,60 @@ export function registerTools(
   );
 
   server.registerTool(
+    'gitlab_update_issue',
+    {
+      title: 'GitLab Update Issue',
+      description: 'Update issue fields in a GitLab project.',
+      inputSchema: {
+        project: z.union([z.string(), z.number()]).optional(),
+        issue_iid: z.number().int().positive(),
+        title: z.string().min(1).optional(),
+        description: z.string().optional(),
+        milestone_id: z.number().int().positive().nullable().optional(),
+        due_date: z
+          .string()
+          .regex(/^\\d{4}-\\d{2}-\\d{2}$/)
+          .nullable()
+          .optional(),
+        state_event: z.enum(['close', 'reopen']).optional()
+      }
+    },
+    async ({ project, issue_iid, title, description, milestone_id, due_date, state_event }) => {
+      return runTool(async () => {
+        deps.issueWorkflowPolicy.assertEnabled();
+        if (state_event === 'close') {
+          deps.issueWorkflowPolicy.assertActionAllowed('close');
+        }
+
+        const hasAnyUpdate =
+          title !== undefined ||
+          description !== undefined ||
+          milestone_id !== undefined ||
+          due_date !== undefined ||
+          state_event !== undefined;
+        if (!hasAnyUpdate) {
+          throw new Error(
+            'At least one field must be provided: title, description, milestone_id, due_date, state_event.'
+          );
+        }
+
+        const resolvedProject = deps.projectResolver.resolveProject(project);
+        const issue = await deps.updateIssueUseCase.execute({
+          project: resolvedProject,
+          issueIid: issue_iid,
+          title,
+          description,
+          milestoneId: milestone_id,
+          dueDate: due_date,
+          stateEvent: state_event
+        });
+
+        return { resolved_project: resolvedProject, issue };
+      });
+    }
+  );
+
+  server.registerTool(
     'gitlab_close_issue',
     {
       title: 'GitLab Close Issue',
@@ -237,6 +302,171 @@ export function registerTools(
   );
 
   server.registerTool(
+    'gitlab_reopen_issue',
+    {
+      title: 'GitLab Reopen Issue',
+      description: 'Reopen an issue by issue IID.',
+      inputSchema: {
+        project: z.union([z.string(), z.number()]).optional(),
+        issue_iid: z.number().int().positive()
+      }
+    },
+    async ({ project, issue_iid }) => {
+      return runTool(async () => {
+        deps.issueWorkflowPolicy.assertEnabled();
+
+        const resolvedProject = deps.projectResolver.resolveProject(project);
+        const issue = await deps.reopenIssueUseCase.execute({
+          project: resolvedProject,
+          issueIid: issue_iid
+        });
+
+        return { resolved_project: resolvedProject, issue };
+      });
+    }
+  );
+
+  server.registerTool(
+    'gitlab_list_project_members',
+    {
+      title: 'GitLab List Project Members',
+      description: 'List members/developers of a GitLab project.',
+      inputSchema: {
+        project: z.union([z.string(), z.number()]).optional(),
+        query: z.string().optional(),
+        per_page: z.number().int().min(1).max(100).optional(),
+        page: z.number().int().min(1).optional()
+      }
+    },
+    async ({ project, query, per_page, page }) => {
+      return runTool(async () => {
+        deps.issueWorkflowPolicy.assertModuleEnabled('members');
+        const resolvedProject = deps.projectResolver.resolveProject(project);
+        const members = await deps.listProjectMembersUseCase.execute({
+          project: resolvedProject,
+          query,
+          perPage: per_page,
+          page
+        });
+
+        return { resolved_project: resolvedProject, members };
+      });
+    }
+  );
+
+  server.registerTool(
+    'gitlab_assign_issue',
+    {
+      title: 'GitLab Assign Issue',
+      description: 'Assign one or more members to an issue.',
+      inputSchema: {
+        project: z.union([z.string(), z.number()]).optional(),
+        issue_iid: z.number().int().positive(),
+        assignee_ids: z.array(z.number().int().positive()).optional(),
+        assignees_usernames: z.array(z.string().min(1)).optional(),
+        mode: z.enum(['replace', 'add']).optional()
+      }
+    },
+    async ({ project, issue_iid, assignee_ids, assignees_usernames, mode }) => {
+      return runTool(async () => {
+        deps.issueWorkflowPolicy.assertModuleEnabled('issues');
+        deps.issueWorkflowPolicy.assertModuleEnabled('members');
+
+        const hasAssignees =
+          (assignee_ids && assignee_ids.length > 0) ||
+          (assignees_usernames && assignees_usernames.length > 0);
+        if (!hasAssignees) {
+          throw new Error('Provide assignee_ids or assignees_usernames.');
+        }
+
+        const resolvedProject = deps.projectResolver.resolveProject(project);
+        const issue = await deps.assignIssueUseCase.execute({
+          project: resolvedProject,
+          issueIid: issue_iid,
+          assigneeIds: assignee_ids,
+          assigneeUsernames: assignees_usernames,
+          mode
+        });
+
+        return { resolved_project: resolvedProject, issue };
+      });
+    }
+  );
+
+  server.registerTool(
+    'gitlab_unassign_issue',
+    {
+      title: 'GitLab Unassign Issue',
+      description: 'Unassign specific or all assignees from an issue.',
+      inputSchema: {
+        project: z.union([z.string(), z.number()]).optional(),
+        issue_iid: z.number().int().positive(),
+        assignee_ids: z.array(z.number().int().positive()).optional(),
+        assignees_usernames: z.array(z.string().min(1)).optional()
+      }
+    },
+    async ({ project, issue_iid, assignee_ids, assignees_usernames }) => {
+      return runTool(async () => {
+        deps.issueWorkflowPolicy.assertModuleEnabled('issues');
+        deps.issueWorkflowPolicy.assertModuleEnabled('members');
+
+        const resolvedProject = deps.projectResolver.resolveProject(project);
+        const issue = await deps.unassignIssueUseCase.execute({
+          project: resolvedProject,
+          issueIid: issue_iid,
+          assigneeIds: assignee_ids,
+          assigneeUsernames: assignees_usernames
+        });
+
+        return { resolved_project: resolvedProject, issue };
+      });
+    }
+  );
+
+  server.registerTool(
+    'gitlab_apply_issue_transition',
+    {
+        title: 'GitLab Apply Issue Transition',
+      description: 'Apply issue transition by setting target label.',
+      inputSchema: {
+        project: z.union([z.string(), z.number()]).optional(),
+        issue_iid: z.number().int().positive(),
+        transition: z.string().min(1).optional(),
+        target_label: z.string().min(1).optional(),
+        state_labels: z.array(z.string().min(1)).optional(),
+        auto_remove_previous_state_labels: z.boolean().optional()
+      }
+    },
+    async ({ project, issue_iid, transition, target_label, state_labels, auto_remove_previous_state_labels }) => {
+      return runTool(async () => {
+        deps.issueWorkflowPolicy.assertActionAllowed('label_update');
+        deps.issueWorkflowPolicy.assertModuleEnabled('issues');
+
+        const resolvedProject = deps.projectResolver.resolveProject(project);
+        const targetLabel = target_label ?? transition;
+        if (!targetLabel) {
+          throw new Error('Provide target_label (or legacy transition).');
+        }
+
+        const result = await deps.applyIssueTransitionUseCase.execute({
+          project: resolvedProject,
+          issueIid: issue_iid,
+          targetLabel,
+          stateLabels: state_labels,
+          autoRemovePreviousStateLabels: auto_remove_previous_state_labels ?? true
+        });
+
+        return {
+          resolved_project: resolvedProject,
+          issue: result.issue,
+          applied_label: result.appliedLabel,
+          removed_labels: result.removedLabels
+        };
+      });
+    }
+  );
+
+  server.registerTool(
     'gitlab_update_issue_labels',
     {
       title: 'GitLab Update Issue Labels',
@@ -251,17 +481,15 @@ export function registerTools(
     async ({ project, issue_iid, mode, labels }) => {
       return runTool(async () => {
         deps.issueWorkflowPolicy.assertActionAllowed('label_update');
-        deps.issueWorkflowPolicy.assertLabelsAllowed(labels);
+        deps.issueWorkflowPolicy.assertModuleEnabled('issues');
 
         const resolvedProject = deps.projectResolver.resolveProject(project);
-        const stateLabels = deps.config.issueWorkflow.allowedLabels;
         const issue = await deps.updateIssueLabelsUseCase.execute({
           project: resolvedProject,
           issueIid: issue_iid,
           mode,
           labels,
-          autoRemovePreviousStateLabels: deps.config.issueWorkflow.autoRemovePreviousStateLabels,
-          stateLabels
+          autoRemovePreviousStateLabels: false
         });
 
         return { resolved_project: resolvedProject, issue };
@@ -279,16 +507,17 @@ export function registerTools(
         state: z.enum(['opened', 'closed', 'all']).optional(),
         search: z.string().optional(),
         labels: z.array(z.string()).optional(),
+        assignee_id: z.number().int().positive().optional(),
+        assignee_username: z.string().min(1).optional(),
+        order_by: z.enum(['created_at', 'updated_at', 'priority', 'due_date']).optional(),
+        sort: z.enum(['asc', 'desc']).optional(),
         per_page: z.number().int().min(1).max(100).optional(),
         page: z.number().int().min(1).optional()
       }
     },
-    async ({ project, state, search, labels, per_page, page }) => {
+    async ({ project, state, search, labels, assignee_id, assignee_username, order_by, sort, per_page, page }) => {
       return runTool(async () => {
         deps.issueWorkflowPolicy.assertEnabled();
-        if (labels) {
-          deps.issueWorkflowPolicy.assertLabelsAllowed(labels);
-        }
 
         const resolvedProject = deps.projectResolver.resolveProject(project);
         const issues = await deps.listIssuesUseCase.execute({
@@ -296,7 +525,11 @@ export function registerTools(
           state,
           search,
           labels,
-          perPage: per_page,
+          assigneeId: assignee_id,
+          assigneeUsername: assignee_username,
+          orderBy: order_by,
+          sort,
+          perPage: per_page ?? 20,
           page
         });
 
@@ -317,7 +550,7 @@ export function registerTools(
     },
     async ({ project, search }) => {
       return runTool(async () => {
-        deps.issueWorkflowPolicy.assertEnabled();
+        deps.issueWorkflowPolicy.assertModuleEnabled('labels');
         const resolvedProject = deps.projectResolver.resolveProject(project);
         const labels = await deps.listLabelsUseCase.execute({
           project: resolvedProject,
@@ -350,7 +583,6 @@ export function registerTools(
     async ({ project, labels }) => {
       return runTool(async () => {
         deps.issueWorkflowPolicy.assertActionAllowed('label_update');
-        deps.issueWorkflowPolicy.assertLabelsAllowed(labels.map((label) => label.name));
 
         const resolvedProject = deps.projectResolver.resolveProject(project);
         const result = await deps.ensureLabelsUseCase.execute({

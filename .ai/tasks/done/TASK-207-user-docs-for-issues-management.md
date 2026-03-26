@@ -32,12 +32,13 @@
 2. `Обновить user guide и проверить консистентность с кодом.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Обновлен docs/USER_GUIDE.md: добавлены issue operations v1, сценарии назначения/снятия assignee, transitions и troubleshooting.`
 
 ## Final Notes
-- Result: `TBD`
-- Follow-ups: `Release notes`
+- Result: `Done`
+- Follow-ups: `TASK-208 риск-план и release notes`

@@ -29,24 +29,19 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value !== 'false'),
-  ISSUE_WORKFLOW_ENABLED: z
+  GITLAB_ISSUES_MODULE_ENABLED: z
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value !== 'false'),
-  ISSUE_WORKFLOW_ALLOW_CREATE: z
+  GITLAB_LABELS_MODULE_ENABLED: z
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value !== 'false'),
-  ISSUE_WORKFLOW_ALLOW_CLOSE: z
+  GITLAB_MEMBERS_MODULE_ENABLED: z
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value !== 'false'),
-  ISSUE_WORKFLOW_ALLOW_LABEL_UPDATE: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((value) => value !== 'false'),
-  ISSUE_WORKFLOW_ALLOWED_LABELS: z.string().optional(),
-  ISSUE_WORKFLOW_AUTO_REMOVE_PREVIOUS_STATE_LABELS: z
+  GITLAB_PROJECTS_MODULE_ENABLED: z
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value !== 'false')
@@ -72,13 +67,11 @@ export type AppConfig = {
     autoResolveProjectFromGit: boolean;
     autoDetectedProject?: string;
   };
-  issueWorkflow: {
-    enabled: boolean;
-    allowCreate: boolean;
-    allowClose: boolean;
-    allowLabelUpdate: boolean;
-    allowedLabels: string[];
-    autoRemovePreviousStateLabels: boolean;
+  modules: {
+    issues: boolean;
+    labels: boolean;
+    members: boolean;
+    projects: boolean;
   };
 };
 
@@ -110,13 +103,11 @@ export function loadConfig(): AppConfig {
       autoResolveProjectFromGit: env.GITLAB_AUTO_RESOLVE_PROJECT_FROM_GIT,
       autoDetectedProject
     },
-    issueWorkflow: {
-      enabled: env.ISSUE_WORKFLOW_ENABLED,
-      allowCreate: env.ISSUE_WORKFLOW_ALLOW_CREATE,
-      allowClose: env.ISSUE_WORKFLOW_ALLOW_CLOSE,
-      allowLabelUpdate: env.ISSUE_WORKFLOW_ALLOW_LABEL_UPDATE,
-      allowedLabels: splitCsv(env.ISSUE_WORKFLOW_ALLOWED_LABELS),
-      autoRemovePreviousStateLabels: env.ISSUE_WORKFLOW_AUTO_REMOVE_PREVIOUS_STATE_LABELS
+    modules: {
+      issues: env.GITLAB_ISSUES_MODULE_ENABLED,
+      labels: env.GITLAB_LABELS_MODULE_ENABLED,
+      members: env.GITLAB_MEMBERS_MODULE_ENABLED,
+      projects: env.GITLAB_PROJECTS_MODULE_ENABLED
     }
   };
 }

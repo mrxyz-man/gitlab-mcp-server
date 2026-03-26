@@ -1,7 +1,7 @@
 # TASK-204: Label Workflow Transitions
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `backend`
 - Priority: `high`
@@ -32,12 +32,15 @@
 2. `Реализовать use-case + adapter integration + тесты.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Реализован use-case ApplyIssueTransitionUseCase и MCP tool gitlab_apply_issue_transition.`
+- `2026-03-26` — `Добавлена поддержка ISSUE_WORKFLOW_STATE_LABEL_MAP_JSON в конфиге.`
+- `2026-03-26` — `Добавлены тесты на разрешенные и запрещенные переходы.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Completed`
 - Follow-ups: `TASK-207`

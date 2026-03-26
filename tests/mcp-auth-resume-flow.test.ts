@@ -33,13 +33,11 @@ describe('MCP auth-required resume flow', () => {
             inlineWaitMs: 0
           }
         },
-        issueWorkflow: {
-          enabled: true,
-          allowCreate: true,
-          allowClose: true,
-          allowLabelUpdate: true,
-          allowedLabels: [],
-          autoRemovePreviousStateLabels: true
+        modules: {
+          issues: true,
+          labels: true,
+          members: true,
+          projects: true
         }
       } as never,
       oauthManager: {
@@ -52,14 +50,21 @@ describe('MCP auth-required resume flow', () => {
       issueWorkflowPolicy: {
         assertEnabled: jest.fn(),
         assertActionAllowed: jest.fn(),
+        assertModuleEnabled: jest.fn(),
         assertLabelsAllowed: jest.fn()
       } as never,
       healthCheckUseCase: { execute: jest.fn() } as never,
       createIssueUseCase: { execute: createIssueExecute } as never,
       getIssueUseCase: { execute: jest.fn() } as never,
+      updateIssueUseCase: { execute: jest.fn() } as never,
       closeIssueUseCase: { execute: jest.fn() } as never,
+      reopenIssueUseCase: { execute: jest.fn() } as never,
+      assignIssueUseCase: { execute: jest.fn() } as never,
+      applyIssueTransitionUseCase: { execute: jest.fn() } as never,
+      unassignIssueUseCase: { execute: jest.fn() } as never,
       updateIssueLabelsUseCase: { execute: jest.fn() } as never,
       listIssuesUseCase: { execute: jest.fn() } as never,
+      listProjectMembersUseCase: { execute: jest.fn() } as never,
       listLabelsUseCase: { execute: jest.fn() } as never,
       ensureLabelsUseCase: { execute: jest.fn() } as never
     });
@@ -127,13 +132,11 @@ describe('MCP auth-required resume flow', () => {
             inlineWaitMs: 1000
           }
         },
-        issueWorkflow: {
-          enabled: true,
-          allowCreate: true,
-          allowClose: true,
-          allowLabelUpdate: true,
-          allowedLabels: [],
-          autoRemovePreviousStateLabels: true
+        modules: {
+          issues: true,
+          labels: true,
+          members: true,
+          projects: true
         }
       } as never,
       oauthManager: {
@@ -147,14 +150,21 @@ describe('MCP auth-required resume flow', () => {
       issueWorkflowPolicy: {
         assertEnabled: jest.fn(),
         assertActionAllowed: jest.fn(),
+        assertModuleEnabled: jest.fn(),
         assertLabelsAllowed: jest.fn()
       } as never,
       healthCheckUseCase: { execute: jest.fn() } as never,
       createIssueUseCase: { execute: createIssueExecute } as never,
       getIssueUseCase: { execute: jest.fn() } as never,
+      updateIssueUseCase: { execute: jest.fn() } as never,
       closeIssueUseCase: { execute: jest.fn() } as never,
+      reopenIssueUseCase: { execute: jest.fn() } as never,
+      assignIssueUseCase: { execute: jest.fn() } as never,
+      applyIssueTransitionUseCase: { execute: jest.fn() } as never,
+      unassignIssueUseCase: { execute: jest.fn() } as never,
       updateIssueLabelsUseCase: { execute: jest.fn() } as never,
       listIssuesUseCase: { execute: jest.fn() } as never,
+      listProjectMembersUseCase: { execute: jest.fn() } as never,
       listLabelsUseCase: { execute: jest.fn() } as never,
       ensureLabelsUseCase: { execute: jest.fn() } as never
     });

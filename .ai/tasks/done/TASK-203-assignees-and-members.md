@@ -1,7 +1,7 @@
 # TASK-203: Assignees and Members Operations
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `backend`
 - Priority: `high`
@@ -32,12 +32,15 @@
 2. `Добавить MCP handlers и тесты.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Добавлены tools: gitlab_list_project_members, gitlab_assign_issue, gitlab_unassign_issue.`
+- `2026-03-26` — `Реализованы use-cases assign/unassign с резолвом assignee IDs по username и обработкой ambiguous/not-found сценариев.`
+- `2026-03-26` — `Добавлены edge-case тесты (user not found, ambiguous match, permission denied passthrough).`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Completed`
 - Follow-ups: `TASK-206`

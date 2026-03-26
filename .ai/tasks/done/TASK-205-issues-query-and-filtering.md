@@ -1,7 +1,7 @@
 # TASK-205: Issues Query and Filtering Enhancements
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `backend`
 - Priority: `medium`
@@ -32,12 +32,15 @@
 2. `Добавить тесты и примеры использования.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Расширен list issues фильтрами assignee/order/sort с backward compatibility.`
+- `2026-03-26` — `Добавлен безопасный default per_page=20 на уровне tool handler.`
+- `2026-03-26` — `Добавлены тесты на комбинации фильтров и query-building.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Completed`
 - Follow-ups: `TASK-206`

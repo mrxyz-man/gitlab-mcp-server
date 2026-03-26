@@ -7,8 +7,14 @@ import { CreateIssueUseCase } from '../../application/use-cases/create-issue';
 import { EnsureLabelsUseCase } from '../../application/use-cases/ensure-labels';
 import { GetIssueUseCase } from '../../application/use-cases/get-issue';
 import { HealthCheckUseCase } from '../../application/use-cases/health-check';
+import { AssignIssueUseCase } from '../../application/use-cases/assign-issue';
+import { ApplyIssueTransitionUseCase } from '../../application/use-cases/apply-issue-transition';
 import { ListLabelsUseCase } from '../../application/use-cases/list-labels';
 import { ListIssuesUseCase } from '../../application/use-cases/list-issues';
+import { ListProjectMembersUseCase } from '../../application/use-cases/list-project-members';
+import { ReopenIssueUseCase } from '../../application/use-cases/reopen-issue';
+import { UnassignIssueUseCase } from '../../application/use-cases/unassign-issue';
+import { UpdateIssueUseCase } from '../../application/use-cases/update-issue';
 import { UpdateIssueLabelsUseCase } from '../../application/use-cases/update-issue-labels';
 import { GitLabOAuthManager } from '../../infrastructure/auth/gitlab-oauth-manager';
 import { StaticTokenProvider } from '../../infrastructure/auth/token-provider';
@@ -58,9 +64,15 @@ export function createMcpServer(): McpServer {
     healthCheckUseCase: new HealthCheckUseCase(),
     createIssueUseCase: new CreateIssueUseCase(gitlabApiClient),
     getIssueUseCase: new GetIssueUseCase(gitlabApiClient),
+    updateIssueUseCase: new UpdateIssueUseCase(gitlabApiClient),
     closeIssueUseCase: new CloseIssueUseCase(gitlabApiClient),
+    reopenIssueUseCase: new ReopenIssueUseCase(gitlabApiClient),
+    assignIssueUseCase: new AssignIssueUseCase(gitlabApiClient, gitlabApiClient),
+    applyIssueTransitionUseCase: new ApplyIssueTransitionUseCase(gitlabApiClient),
+    unassignIssueUseCase: new UnassignIssueUseCase(gitlabApiClient, gitlabApiClient),
     updateIssueLabelsUseCase: new UpdateIssueLabelsUseCase(gitlabApiClient),
     listIssuesUseCase: new ListIssuesUseCase(gitlabApiClient),
+    listProjectMembersUseCase: new ListProjectMembersUseCase(gitlabApiClient),
     listLabelsUseCase: new ListLabelsUseCase(gitlabApiClient),
     ensureLabelsUseCase: new EnsureLabelsUseCase(gitlabApiClient)
   });

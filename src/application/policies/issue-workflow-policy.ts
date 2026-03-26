@@ -2,43 +2,31 @@ import type { AppConfig } from '../../shared/config';
 import { PolicyError } from '../../shared/errors';
 
 export type IssueAction = 'create' | 'close' | 'label_update' | 'read';
+export type GitLabModule = 'issues' | 'labels' | 'members' | 'projects';
 
 export class IssueWorkflowPolicy {
   constructor(private readonly config: AppConfig) {}
 
-  assertEnabled(): void {
-    if (!this.config.issueWorkflow.enabled) {
-      throw new PolicyError('Issue workflow is disabled by configuration.');
+  assertModuleEnabled(module: GitLabModule): void {
+    if (!this.config.modules[module]) {
+      throw new PolicyError(`GitLab module '${module}' is disabled by configuration.`);
     }
   }
 
   assertActionAllowed(action: IssueAction): void {
-    this.assertEnabled();
-
-    if (action === 'create' && !this.config.issueWorkflow.allowCreate) {
-      throw new PolicyError('Issue creation is disabled by configuration.');
+    if (action === 'label_update') {
+      this.assertModuleEnabled('labels');
+      return;
     }
+    this.assertModuleEnabled('issues');
+  }
 
-    if (action === 'close' && !this.config.issueWorkflow.allowClose) {
-      throw new PolicyError('Issue closing is disabled by configuration.');
-    }
-
-    if (action === 'label_update' && !this.config.issueWorkflow.allowLabelUpdate) {
-      throw new PolicyError('Issue label updates are disabled by configuration.');
-    }
+  assertEnabled(): void {
+    this.assertModuleEnabled('issues');
   }
 
   assertLabelsAllowed(labels: string[]): void {
-    const allowed = this.config.issueWorkflow.allowedLabels;
-    if (allowed.length === 0) {
-      return;
-    }
-
-    const invalid = labels.filter((label) => !allowed.includes(label));
-    if (invalid.length > 0) {
-      throw new PolicyError(
-        `Labels are not allowed by policy: ${invalid.join(', ')}. Allowed: ${allowed.join(', ')}.`
-      );
-    }
+    // Compatibility no-op: label whitelist policy was removed.
+    void labels;
   }
 }

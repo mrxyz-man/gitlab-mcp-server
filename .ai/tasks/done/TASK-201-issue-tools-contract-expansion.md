@@ -1,7 +1,7 @@
 # TASK-201: Expand Issue Tools Contract
 
 ## Metadata
-- Status: `ready`
+- Status: `done`
 - Type: `feature`
 - Area: `architecture`
 - Priority: `high`
@@ -32,12 +32,14 @@
 2. `Обновить архитектурный контракт и согласовать его как baseline.`
 
 ## Validation
-- [ ] lint/typecheck/test completed
-- [ ] edge-cases checked
+- [x] lint/typecheck/test completed
+- [x] edge-cases checked
 
 ## Execution Log
 - `2026-03-25` — `Микротаска создана.`
+- `2026-03-26` — `Обновлен контракт .ai/context/architecture/issue-tools-v0.md до v1 baseline (tool catalog, DTO, error contract, examples, compatibility).`
+- `2026-03-26` — `Проверки lint/typecheck/test выполнены.`
 
 ## Final Notes
-- Result: `TBD`
+- Result: `Completed`
 - Follow-ups: `TASK-202..TASK-207`

@@ -5,21 +5,26 @@ import type {
   GitLabApiPort,
   GitLabIssue,
   GitLabLabel,
+  GitLabMember,
   GitLabProject,
+  ListProjectMembersInput,
   ListLabelsInput,
   ListIssuesInput,
+  UpdateIssueInput,
   UpdateIssueLabelsInput
 } from '../../domain/ports/gitlab-api';
 import type { TokenProvider } from '../auth/token-provider';
 import { GitLabBaseClient } from './base/gitlab-base-client';
 import { GitLabIssuesClient } from './clients/gitlab-issues-client';
 import { GitLabLabelsClient } from './clients/gitlab-labels-client';
+import { GitLabMembersClient } from './clients/gitlab-members-client';
 import { GitLabProjectsClient } from './clients/gitlab-projects-client';
 
 export class GitLabApiClient implements GitLabApiPort {
   private readonly projectsClient: GitLabProjectsClient;
   private readonly issuesClient: GitLabIssuesClient;
   private readonly labelsClient: GitLabLabelsClient;
+  private readonly membersClient: GitLabMembersClient;
 
   constructor(
     private readonly options: {
@@ -31,6 +36,7 @@ export class GitLabApiClient implements GitLabApiPort {
     this.projectsClient = new GitLabProjectsClient(baseClient);
     this.issuesClient = new GitLabIssuesClient(baseClient);
     this.labelsClient = new GitLabLabelsClient(baseClient);
+    this.membersClient = new GitLabMembersClient(baseClient);
   }
 
   async listProjects(): Promise<GitLabProject[]> {
@@ -49,6 +55,14 @@ export class GitLabApiClient implements GitLabApiPort {
     return this.issuesClient.closeIssue(input);
   }
 
+  async reopenIssue(input: GetIssueInput): Promise<GitLabIssue> {
+    return this.issuesClient.reopenIssue(input);
+  }
+
+  async updateIssue(input: UpdateIssueInput): Promise<GitLabIssue> {
+    return this.issuesClient.updateIssue(input);
+  }
+
   async updateIssueLabels(input: UpdateIssueLabelsInput): Promise<GitLabIssue> {
     return this.issuesClient.updateIssueLabels(input);
   }
@@ -63,5 +77,9 @@ export class GitLabApiClient implements GitLabApiPort {
 
   async createLabel(input: EnsureLabelInput): Promise<GitLabLabel> {
     return this.labelsClient.createLabel(input);
+  }
+
+  async listProjectMembers(input: ListProjectMembersInput): Promise<GitLabMember[]> {
+    return this.membersClient.listProjectMembers(input);
   }
 }

@@ -70,14 +70,14 @@
 
 ## Этап 5. Full Issue Management (GitLab)
 
-- [ ] Расширить контракт MCP tools для issue-management до v1.
-- [ ] Добавить операции update/reopen/state transition для issue.
-- [ ] Добавить операции назначения/снятия assignee и список разработчиков проекта.
-- [ ] Добавить policy-driven label transitions (workflow статусы через labels).
-- [ ] Расширить list/filter issues (state/assignee/labels/search/pagination/sort).
-- [ ] Подготовить полную test matrix по всем issue tools.
-- [ ] Обновить пользовательскую документацию по новым операциям.
-- [ ] Зафиксировать и применить риск-план по эпику full issue management.
+- [x] Расширить контракт MCP tools для issue-management до v1.
+- [x] Добавить операции update/reopen/state transition для issue.
+- [x] Добавить операции назначения/снятия assignee и список разработчиков проекта.
+- [x] Добавить policy-driven label transitions (workflow статусы через labels).
+- [x] Расширить list/filter issues (state/assignee/labels/search/pagination/sort).
+- [x] Подготовить полную test matrix по всем issue tools.
+- [x] Обновить пользовательскую документацию по новым операциям.
+- [x] Зафиксировать и применить риск-план по эпику full issue management.
 
 Декомпозиция в backlog:
 - `TASK-200` (epic)

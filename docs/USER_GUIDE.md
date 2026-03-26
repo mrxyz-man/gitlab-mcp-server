@@ -154,10 +154,46 @@ npx -y gitlab-mcp-agent-server
 1. Вызови `gitlab_list_labels`.
 2. Создай issue: `gitlab_create_issue`.
 3. Получи issue: `gitlab_get_issue`.
-4. Обнови labels: `gitlab_update_issue_labels`.
-5. Закрой issue: `gitlab_close_issue`.
+4. Обнови issue: `gitlab_update_issue`.
+5. Переоткрой issue: `gitlab_reopen_issue`.
+6. Получи участников: `gitlab_list_project_members`.
+7. Назначь исполнителя: `gitlab_assign_issue`.
+8. Сними назначение: `gitlab_unassign_issue`.
+9. Примени transition: `gitlab_apply_issue_transition`.
+10. Обнови labels: `gitlab_update_issue_labels`.
+11. Закрой issue: `gitlab_close_issue`.
 
-## 9. Agent Automation Contract (OAuth)
+## 9. Issue Operations (v1)
+
+Доступные tools по задачам:
+1. `gitlab_list_issues`
+2. `gitlab_get_issue`
+3. `gitlab_create_issue`
+4. `gitlab_update_issue`
+5. `gitlab_close_issue`
+6. `gitlab_reopen_issue`
+7. `gitlab_list_project_members`
+8. `gitlab_assign_issue`
+9. `gitlab_unassign_issue`
+10. `gitlab_apply_issue_transition`
+11. `gitlab_update_issue_labels`
+12. `gitlab_list_labels`
+13. `gitlab_ensure_labels`
+
+Пример фильтрации задач:
+1. `gitlab_list_issues` с `state=opened`, `assignee_id`, `labels`, `order_by=updated_at`, `sort=desc`, `per_page`, `page`.
+
+Пример назначения:
+1. Найди участников: `gitlab_list_project_members(query="dev")`.
+2. Назначь по id: `gitlab_assign_issue(assignee_ids=[42], mode="add")`.
+3. Или по username: `gitlab_assign_issue(assignees_usernames=["dev.user"])`.
+
+Пример перехода workflow:
+1. Вызови:
+   - `gitlab_apply_issue_transition(target_label="In Testing", state_labels=["Todo","In Progress","In Testing","Done"], auto_remove_previous_state_labels=true)`
+2. Можно использовать legacy-поле `transition` как alias для `target_label`.
+
+## 10. Agent Automation Contract (OAuth)
 
 Этот контракт нужен для ИИ-агента, чтобы пользователь не повторял исходный запрос вручную.
 
@@ -181,7 +217,7 @@ npx -y gitlab-mcp-agent-server
 2. `gitlab_oauth_status`
 3. `gitlab_resume_request`
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 `The redirect URI included is not valid`:
 1. Проверь, что URI совпадает 1-в-1:
@@ -211,9 +247,23 @@ npx -y gitlab-mcp-agent-server
 3. Если auto-open не сработал, используй URL из логов (`localEntryUrl` или direct authorize URL).
 4. При повторяющихся timeout увеличь `GITLAB_OAUTH_CALLBACK_TIMEOUT_MS`.
 
-## 11. Advanced (необязательно)
+`gitlab_assign_issue` вернул неоднозначного пользователя:
+1. Уточни `assignees_usernames` до точного username.
+2. Или сначала получи `gitlab_list_project_members(query=...)` и передай `assignee_ids`.
+
+`gitlab_apply_issue_transition` вернул ошибку:
+1. Передай `target_label` (или `transition`).
+2. Проверь, что label существует в проекте (`gitlab_list_labels`).
+3. Если нужно снимать предыдущие status labels, передай `state_labels` и `auto_remove_previous_state_labels=true`.
+
+## 12. Advanced (необязательно)
 
 Если нужен тонкий контроль, можно использовать:
 1. `GITLAB_DEFAULT_PROJECT` для явного fallback проекта.
 2. `GITLAB_AUTO_RESOLVE_PROJECT_FROM_GIT` для автоопределения проекта из `git remote`.
 3. `GITLAB_OAUTH_TOKEN_STORE_PATH` для ручного override пути токена.
+4. Модульные флаги:
+   - `GITLAB_ISSUES_MODULE_ENABLED=true|false`
+   - `GITLAB_LABELS_MODULE_ENABLED=true|false`
+   - `GITLAB_MEMBERS_MODULE_ENABLED=true|false`
+   - `GITLAB_PROJECTS_MODULE_ENABLED=true|false`

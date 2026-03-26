@@ -14,6 +14,7 @@ export type {
   CreateIssueInput,
   GetIssueInput,
   ListIssuesInput,
+  UpdateIssueInput,
   UpdateIssueLabelsInput
 } from './gitlab/gitlab-issues-port';
 export type { EnsureLabelInput, ListLabelsInput } from './gitlab/gitlab-labels-port';

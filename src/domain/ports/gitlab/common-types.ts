@@ -16,6 +16,7 @@ export type GitLabIssue = {
   description: string | null;
   state: GitLabIssueState;
   labels: string[];
+  assigneeIds?: number[];
   webUrl: string;
   updatedAt: string;
   closedAt: string | null;

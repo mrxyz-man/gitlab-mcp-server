@@ -3,6 +3,7 @@ import type {
   GetIssueInput,
   GitLabIssuesPort,
   ListIssuesInput,
+  UpdateIssueInput,
   UpdateIssueLabelsInput
 } from '../../../domain/ports/gitlab/gitlab-issues-port';
 import type { GitLabIssue } from '../../../domain/ports/gitlab/common-types';
@@ -45,12 +46,48 @@ export class GitLabIssuesClient implements GitLabIssuesPort {
   }
 
   async closeIssue(input: GetIssueInput): Promise<GitLabIssue> {
+    return this.updateIssue({
+      project: input.project,
+      issueIid: input.issueIid,
+      stateEvent: 'close'
+    });
+  }
+
+  async reopenIssue(input: GetIssueInput): Promise<GitLabIssue> {
+    return this.updateIssue({
+      project: input.project,
+      issueIid: input.issueIid,
+      stateEvent: 'reopen'
+    });
+  }
+
+  async updateIssue(input: UpdateIssueInput): Promise<GitLabIssue> {
     const projectPath = encodeProjectRef(input.project);
+    const body: Record<string, unknown> = {};
+    if (input.title !== undefined) {
+      body.title = input.title;
+    }
+    if (input.description !== undefined) {
+      body.description = input.description;
+    }
+    if (input.milestoneId !== undefined) {
+      body.milestone_id = input.milestoneId;
+    }
+    if (input.dueDate !== undefined) {
+      body.due_date = input.dueDate;
+    }
+    if (input.assigneeIds !== undefined) {
+      body.assignee_ids = input.assigneeIds;
+    }
+    if (input.stateEvent !== undefined) {
+      body.state_event = input.stateEvent;
+    }
+
     const data = await this.baseClient.requestJson<GitLabIssueApi>(
       `/projects/${projectPath}/issues/${input.issueIid}`,
       {
         method: 'PUT',
-        body: JSON.stringify({ state_event: 'close' })
+        body: JSON.stringify(body)
       },
       input.project
     );
@@ -83,6 +120,18 @@ export class GitLabIssuesClient implements GitLabIssuesPort {
     }
     if (input.labels && input.labels.length > 0) {
       query.set('labels', input.labels.join(','));
+    }
+    if (input.assigneeId) {
+      query.set('assignee_id', String(input.assigneeId));
+    }
+    if (input.assigneeUsername) {
+      query.set('assignee_username', input.assigneeUsername);
+    }
+    if (input.orderBy) {
+      query.set('order_by', input.orderBy);
+    }
+    if (input.sort) {
+      query.set('sort', input.sort);
     }
     if (input.perPage) {
       query.set('per_page', String(input.perPage));

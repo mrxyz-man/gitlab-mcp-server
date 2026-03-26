@@ -62,6 +62,12 @@ function makeApi(initialLabels: string[]) {
     async closeIssue() {
       throw new Error('Not used in test');
     },
+    async reopenIssue() {
+      throw new Error('Not used in test');
+    },
+    async updateIssue() {
+      throw new Error('Not used in test');
+    },
     async updateIssueLabels(input) {
       state.updatedLabels = input.labels;
       return makeIssue(input.labels);

@@ -3,7 +3,7 @@ import type { AppConfig } from '../src/shared/config';
 
 type ConfigOverrides = {
   gitlab?: Partial<AppConfig['gitlab']>;
-  issueWorkflow?: Partial<AppConfig['issueWorkflow']>;
+  modules?: Partial<AppConfig['modules']>;
 };
 
 function makeConfig(overrides?: ConfigOverrides): AppConfig {
@@ -25,14 +25,12 @@ function makeConfig(overrides?: ConfigOverrides): AppConfig {
       autoDetectedProject: undefined,
       ...(overrides?.gitlab ?? {})
     },
-    issueWorkflow: {
-      enabled: true,
-      allowCreate: true,
-      allowClose: true,
-      allowLabelUpdate: true,
-      allowedLabels: [],
-      autoRemovePreviousStateLabels: true,
-      ...(overrides?.issueWorkflow ?? {})
+    modules: {
+      issues: true,
+      labels: true,
+      members: true,
+      projects: true,
+      ...(overrides?.modules ?? {})
     }
   };
 }
